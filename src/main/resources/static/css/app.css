@@ -1242,6 +1242,119 @@ thead th {
     margin-top: 1rem;
 }
 
+.share-dialog-card {
+    width: min(100%, 560px);
+    display: grid;
+    gap: 1rem;
+}
+
+.share-config-dialog {
+    width: min(100%, 560px);
+    display: grid;
+    gap: 1rem;
+}
+
+.share-config-hero {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1rem 1.05rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(250, 251, 255, 0.98) 0%, rgba(243, 246, 252, 0.94) 100%);
+    border: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+.share-config-hero strong {
+    font-size: 1.05rem;
+    color: var(--text);
+}
+
+.share-config-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 0.36rem 0.72rem;
+    border-radius: 999px;
+    background: rgba(10, 132, 255, 0.08);
+    color: var(--primary-strong);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.share-config-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.share-dialog-hero {
+    display: grid;
+    gap: 0.55rem;
+    padding: 1rem 1.05rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(245, 250, 255, 0.98) 0%, rgba(236, 244, 255, 0.92) 100%);
+    border: 1px solid rgba(10, 132, 255, 0.12);
+}
+
+.share-dialog-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    padding: 0.36rem 0.72rem;
+    border-radius: 999px;
+    background: rgba(10, 132, 255, 0.1);
+    color: var(--primary-strong);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.share-dialog-hint {
+    line-height: 1.55;
+}
+
+.share-dialog-field {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.share-link-box {
+    padding: 0.32rem;
+    border-radius: 18px;
+    background: rgba(247, 247, 250, 0.94);
+    border: 1px solid rgba(60, 60, 67, 0.08);
+}
+
+.share-link-box input {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0.88rem 0.95rem;
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size: 0.92rem;
+}
+
+.share-link-box input:focus {
+    outline: none;
+}
+
+.share-dialog-actions {
+    margin-top: 0;
+}
+
+.share-dialog-tips {
+    display: grid;
+    gap: 0.38rem;
+    padding: 0.95rem 1rem;
+    border-radius: 18px;
+    background: rgba(247, 247, 250, 0.82);
+    border: 1px solid rgba(60, 60, 67, 0.06);
+    color: var(--muted);
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+
 .dialog-backdrop[hidden],
 .dialog-card[hidden] {
     display: none !important;

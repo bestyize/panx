@@ -287,7 +287,40 @@
         </div>
     </section>
 
-    <section class="dialog-card" id="shareDialog" hidden>
+    <section class="dialog-card share-config-dialog" id="shareCreateDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Share</p>
+                <h3>分享设置</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <div class="share-config-hero">
+            <div class="share-config-badge">准备生成分享链接</div>
+            <strong id="shareConfigName">当前文件</strong>
+            <p class="muted">可设置过期时间和提取码。留空时将沿用系统默认策略或不设置提取码。</p>
+        </div>
+        <div class="share-config-grid">
+            <label>
+                <span>过期小时数</span>
+                <input id="shareExpireHoursInput" type="number" min="1" step="1" inputmode="numeric" placeholder="例如 72">
+            </label>
+            <label>
+                <span>提取码</span>
+                <input id="shareExtractCodeInput" type="text" maxlength="64" placeholder="可选，留空则不设置">
+            </label>
+        </div>
+        <div class="share-dialog-tips">
+            <span>分享链接创建后可在“我分享的”页面统一管理和取消。</span>
+            <span>若未填写过期时间，将使用系统默认有效期。</span>
+        </div>
+        <div class="dialog-actions share-dialog-actions">
+            <button type="button" onclick="submitShareCreate()">生成分享链接</button>
+            <button type="button" class="secondary" onclick="closeDialogs()">取消</button>
+        </div>
+    </section>
+
+    <section class="dialog-card share-dialog-card" id="shareDialog" hidden>
         <div class="dialog-head">
             <div>
                 <p class="eyebrow">Share</p>
@@ -295,14 +328,23 @@
             </div>
             <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
         </div>
-        <p class="muted" id="shareDialogHint">可以直接复制下面的链接。</p>
-        <label>
+        <div class="share-dialog-hero">
+            <div class="share-dialog-badge">链接已生成</div>
+            <p class="muted share-dialog-hint" id="shareDialogHint">可以直接复制下面的链接。</p>
+        </div>
+        <label class="share-dialog-field">
             <span>分享地址</span>
-            <input id="shareUrlInput" type="text" readonly>
+            <div class="share-link-box">
+                <input id="shareUrlInput" type="text" readonly>
+            </div>
         </label>
-        <div class="dialog-actions">
+        <div class="dialog-actions share-dialog-actions">
             <button type="button" onclick="copyShareUrl()">复制链接</button>
             <a class="button-link secondary-link" id="shareOpenLink" target="_blank">打开分享页</a>
+        </div>
+        <div class="share-dialog-tips">
+            <span>可将此链接发送给他人访问。</span>
+            <span>若浏览器限制剪贴板访问，可手动复制地址栏内容。</span>
         </div>
     </section>
 </div>
@@ -327,6 +369,8 @@
     let pendingMoveNodeId = null;
     let pendingMoveNodeName = '';
     let pendingMoveNodeParentId = null;
+    let pendingShareNodeId = null;
+    let pendingShareNodeName = '';
     let currentUploadXhr = null;
     const rowActionMenu = document.getElementById('rowActionMenu');
     const fileTableBody = document.getElementById('fileTableBody');
@@ -436,6 +480,8 @@
         pendingMoveNodeId = null;
         pendingMoveNodeName = '';
         pendingMoveNodeParentId = null;
+        pendingShareNodeId = null;
+        pendingShareNodeName = '';
     }
 
     async function request(url, options = {}) {
@@ -773,22 +819,29 @@
     }
 
     async function shareNode(id) {
-        const expireHoursRaw = prompt('过期小时数可选，留空使用默认值', '72');
-        if (expireHoursRaw === null) return;
-        const expireHours = expireHoursRaw.trim() === '' ? null : Number(expireHoursRaw);
-        if (expireHoursRaw.trim() !== '' && (!Number.isInteger(expireHours) || expireHours <= 0)) {
+        const row = document.querySelector(`tr[data-node-id="${id}"]`);
+        pendingShareNodeId = Number(id);
+        pendingShareNodeName = row?.dataset.nodeName || `节点 #${id}`;
+        document.getElementById('shareConfigName').textContent = pendingShareNodeName;
+        document.getElementById('shareExpireHoursInput').value = '72';
+        document.getElementById('shareExtractCodeInput').value = '';
+        openDialog('shareCreateDialog');
+    }
+
+    async function submitShareCreate() {
+        const expireHoursRaw = document.getElementById('shareExpireHoursInput').value.trim();
+        const extractCodeRaw = document.getElementById('shareExtractCodeInput').value.trim();
+        const expireHours = expireHoursRaw === '' ? null : Number(expireHoursRaw);
+        if (expireHoursRaw !== '' && (!Number.isInteger(expireHours) || expireHours <= 0)) {
             showFlash('过期小时数必须为正整数。', true);
             return;
         }
-
-        const extractCodeRaw = prompt('提取码可选，留空则不设置');
-        if (extractCodeRaw === null) return;
-        const extractCode = extractCodeRaw.trim() === '' ? null : extractCodeRaw.trim();
+        const extractCode = extractCodeRaw === '' ? null : extractCodeRaw;
 
         try {
             const result = await request('/api/shares', {
                 method: 'POST',
-                body: JSON.stringify({fileNodeId: Number(id), expireHours, extractCode})
+                body: JSON.stringify({fileNodeId: pendingShareNodeId, expireHours, extractCode})
             });
             const token = result.data.shareToken;
             const shareUrl = `${location.origin}/share/${token}`;

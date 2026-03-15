@@ -145,7 +145,7 @@
 <div class="menu-panel row-menu-panel global-row-menu" id="rowActionMenu" hidden></div>
 
 <div class="dialog-backdrop" id="dialogBackdrop" hidden>
-    <section class="dialog-card" id="shareDialog" hidden>
+    <section class="dialog-card share-dialog-card" id="shareDialog" hidden>
         <div class="dialog-head">
             <div>
                 <p class="eyebrow">Share</p>
@@ -153,14 +153,23 @@
             </div>
             <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
         </div>
-        <p class="muted" id="shareDialogHint">可以直接复制下面的链接。</p>
-        <label>
+        <div class="share-dialog-hero">
+            <div class="share-dialog-badge">链接已生成</div>
+            <p class="muted share-dialog-hint" id="shareDialogHint">可以直接复制下面的链接。</p>
+        </div>
+        <label class="share-dialog-field">
             <span>分享地址</span>
-            <input id="shareUrlInput" type="text" readonly>
+            <div class="share-link-box">
+                <input id="shareUrlInput" type="text" readonly>
+            </div>
         </label>
-        <div class="dialog-actions">
+        <div class="dialog-actions share-dialog-actions">
             <button type="button" onclick="copyShareUrl()">复制链接</button>
             <a class="button-link secondary-link" id="shareOpenLink" target="_blank">打开分享页</a>
+        </div>
+        <div class="share-dialog-tips">
+            <span>可将此链接发送给他人访问。</span>
+            <span>若浏览器限制剪贴板访问，可手动复制地址栏内容。</span>
         </div>
     </section>
 </div>
