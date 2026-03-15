@@ -7,41 +7,114 @@
     <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
 <body class="player-page">
-<main class="preview-page-shell">
-    <section class="panel preview-page-panel">
-        <div class="player-stage-head">
-            <a class="back-link preview-back-link" th:href="${backUrl}">返回文件列表</a>
+<main class="player-shell player-shell-stacked">
+    <header class="player-topbar panel">
+        <div class="player-topbar-brand">
+            <div class="drive-brand">
+                <div class="brand-mark">P</div>
+                <div class="drive-brand-copy">
+                    <strong>Panx 云盘</strong>
+                    <span>文件预览页</span>
+                </div>
+            </div>
+            <div class="player-topbar-copy">
+                <p class="eyebrow">Preview</p>
+                <strong th:text="${file.name}">file.txt</strong>
+            </div>
+        </div>
+
+        <div class="player-topbar-actions">
             <span class="type-pill"
                   th:text="${file.iconKey == 'image' ? '图片预览' : file.iconKey == 'text' ? '文本预览' : '文件预览'}">
                 文件预览
             </span>
+            <span class="player-source-pill" th:text="${file.iconKey == 'image' ? '图像模式' : '阅读模式'}">图像模式</span>
+            <a class="button-link secondary-link player-menu-link" th:href="${backUrl}">返回文件列表</a>
+            <a class="button-link secondary-link player-menu-link" th:href="${previewUrl}" target="_blank">原始预览</a>
+            <a class="button-link player-menu-link" th:href="${downloadUrl}">下载文件</a>
+        </div>
+    </header>
+
+    <section class="preview-main-card">
+        <div class="preview-main-head">
+            <div class="player-main-copy">
+                <p class="eyebrow">Panx Preview</p>
+                <h1 th:text="${file.name}">file.txt</h1>
+                <p class="player-subtitle">
+                    <span th:text="${file.iconKey == 'image' ? '大画布图片预览' : '沉浸式文本阅读'}">大画布图片预览</span>
+                    <span> · </span>
+                    <span th:text="${file.sizeDisplay}">0.00 MB</span>
+                    <span th:if="${file.contentType != null}">
+                        <span> · </span>
+                        <span th:text="${file.contentType}">text/plain</span>
+                    </span>
+                </p>
+            </div>
+            <div class="player-main-status">
+                <span class="player-meta-pill" th:text="${file.iconKey == 'image' ? '支持原尺寸查看' : '适合长文本阅读'}">支持原尺寸查看</span>
+                <span class="player-main-note"
+                      th:text="${file.iconKey == 'image' ? '图片区域会自适应页面宽度，保留更多画面空间。' : '文本预览采用单独阅读区，避免工具栏与内容重叠。'}">
+                    图片区域会自适应页面宽度，保留更多画面空间。
+                </span>
+            </div>
         </div>
 
-        <div class="preview-page-stage">
-            <img class="preview-surface preview-stage-image"
-                 th:if="${file.iconKey == 'image'}"
-                 th:src="${previewUrl}"
-                 th:alt="${file.name}">
-            <iframe class="preview-frame preview-stage-frame"
-                    th:if="${file.iconKey != 'image'}"
-                    th:src="${previewUrl}"
-                    title="文件预览"></iframe>
+        <div class="preview-stage-card">
+            <div class="preview-image-frame" th:if="${file.iconKey == 'image'}">
+                <img class="preview-surface preview-stage-image"
+                     th:src="${previewUrl}"
+                     th:alt="${file.name}">
+            </div>
+            <div class="preview-text-frame" th:if="${file.iconKey != 'image'}">
+                <iframe class="preview-frame preview-stage-frame"
+                        th:src="${previewUrl}"
+                        title="文件预览"></iframe>
+            </div>
         </div>
     </section>
 
-    <aside class="player-sidebar">
-        <section class="panel">
-            <p class="eyebrow">Preview</p>
-            <h1 th:text="${file.name}">file.txt</h1>
-            <p class="muted" th:text="'类型：' + ${file.iconKey == 'image' ? '图片' : file.iconKey == 'text' ? '文档' : '文件'}">类型</p>
-            <p class="muted" th:text="'大小：' + ${file.sizeDisplay}">大小</p>
-            <p class="muted" th:if="${file.contentType != null}" th:text="'格式：' + ${file.contentType}">格式</p>
-            <div class="player-actions">
-                <a class="button-link" th:href="${downloadUrl}">下载文件</a>
-                <a class="button-link secondary-link" th:href="${previewUrl}" target="_blank">打开原始预览</a>
-            </div>
-        </section>
-    </aside>
+    <section class="player-info-section">
+        <div class="player-detail-grid">
+            <article class="panel player-detail-card">
+                <p class="eyebrow">文件信息</p>
+                <div class="player-detail-list">
+                    <div class="player-detail-row">
+                        <span>类型</span>
+                        <strong th:text="${file.iconKey == 'image' ? '图片' : file.iconKey == 'text' ? '文档' : '文件'}">图片</strong>
+                    </div>
+                    <div class="player-detail-row">
+                        <span>大小</span>
+                        <strong th:text="${file.sizeDisplay}">0.00 MB</strong>
+                    </div>
+                    <div class="player-detail-row" th:if="${file.contentType != null}">
+                        <span>格式</span>
+                        <strong th:text="${file.contentType}">text/plain</strong>
+                    </div>
+                </div>
+            </article>
+
+            <article class="panel player-detail-card">
+                <p class="eyebrow">预览说明</p>
+                <h3 class="player-detail-title">查看体验</h3>
+                <p class="muted" th:if="${file.iconKey == 'image'}">图片预览采用居中大画布，适合查看大尺寸截图、照片和设计稿。</p>
+                <p class="muted" th:if="${file.iconKey != 'image'}">文本预览采用独立阅读区，适合浏览源码、日志和普通文档内容。</p>
+            </article>
+
+            <article class="panel player-detail-card">
+                <p class="eyebrow">快捷操作</p>
+                <h3 class="player-detail-title">导出与原始预览</h3>
+                <div class="player-detail-actions">
+                    <a class="button-link" th:href="${downloadUrl}">下载文件</a>
+                    <a class="button-link secondary-link player-menu-link" th:href="${previewUrl}" target="_blank">打开原始预览</a>
+                </div>
+                <ul class="player-tip-list">
+                    <li>图片会优先展示完整画面，避免被信息栏压缩。</li>
+                    <li>文本类文件下方保留信息区，不影响上方阅读空间。</li>
+                    <li>如需浏览器原生能力，可直接打开原始预览链接。</li>
+                </ul>
+            </article>
+        </div>
+    </section>
 </main>
 </body>
 </html>

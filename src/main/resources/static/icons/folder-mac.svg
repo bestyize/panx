@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 48" fill="none">
+  <defs>
+    <linearGradient id="mac-folder-tab" x1="12" y1="6" x2="30" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8AD7FF"/>
+      <stop offset="1" stop-color="#5FB9FF"/>
+    </linearGradient>
+    <linearGradient id="mac-folder-back" x1="10" y1="12" x2="52" y2="42" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#78CAFF"/>
+      <stop offset="1" stop-color="#48A9F7"/>
+    </linearGradient>
+    <linearGradient id="mac-folder-front" x1="10" y1="18" x2="56" y2="40" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9EE1FF"/>
+      <stop offset=".56" stop-color="#67C4FF"/>
+      <stop offset="1" stop-color="#4BAAF7"/>
+    </linearGradient>
+  </defs>
+  <path d="M10 15C10 11.6863 12.6863 9 16 9H25.5C26.7449 9 27.9571 8.61266 28.9705 7.8918L31.0295 6.42638C32.0429 5.70553 33.2551 5.31818 34.5 5.31818H45C48.3137 5.31818 51 8.00447 51 11.3182V14.5H10V15Z" fill="url(#mac-folder-tab)"/>
+  <path d="M6 18.4091C6 15.0954 8.68629 12.4091 12 12.4091H52C55.3137 12.4091 58 15.0954 58 18.4091V36C58 39.3137 55.3137 42 52 42H12C8.68629 42 6 39.3137 6 36V18.4091Z" fill="url(#mac-folder-back)"/>
+  <path d="M9 19.5C9 17.8431 10.3431 16.5 12 16.5H56C57.6569 16.5 59 17.8431 59 19.5V35.1818C59 37.9432 56.7614 40.1818 54 40.1818H14C11.2386 40.1818 9 37.9432 9 35.1818V19.5Z" fill="url(#mac-folder-front)"/>
+  <path d="M12 18.2H55.5" stroke="#C8F0FF" stroke-width="1.4" stroke-linecap="round" opacity=".72"/>
+  <path d="M13.8 22.2H53.2" stroke="#E9FAFF" stroke-width="1.6" stroke-linecap="round" opacity=".58"/>
+</svg>

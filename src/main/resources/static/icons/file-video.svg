@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none">
+  <defs>
+    <linearGradient id="video-doc" x1="10" y1="4" x2="52" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EFF2FF"/>
+    </linearGradient>
+    <linearGradient id="video-screen" x1="18" y1="34" x2="46" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#626FD8"/>
+      <stop offset=".48" stop-color="#495ABD"/>
+      <stop offset="1" stop-color="#24335F"/>
+    </linearGradient>
+    <filter id="video-shadow" x="4" y="2" width="52" height="78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <g filter="url(#video-shadow)">
+    <path d="M16 4H36L52 20V68C52 72.418 48.418 76 44 76H16C11.582 76 8 72.418 8 68V12C8 7.582 11.582 4 16 4Z" fill="url(#video-doc)"/>
+    <path d="M36 4V16C36 18.209 37.791 20 40 20H52" fill="#E6E9FE"/>
+    <path d="M36 4L52 20H40C37.791 20 36 18.209 36 16V4Z" fill="#D8DEFA"/>
+    <path d="M16 4.5H35.4L51.5 20.6V68C51.5 72.142 48.142 75.5 44 75.5H16C11.858 75.5 8.5 72.142 8.5 68V12C8.5 7.858 11.858 4.5 16 4.5Z" stroke="#D8DDF1"/>
+    <rect x="16" y="14" width="28" height="8" rx="4" fill="#7382FF"/>
+    <rect x="16" y="34" width="32" height="24" rx="7" fill="url(#video-screen)"/>
+    <path d="M20 39H24V53H20V39ZM40 39H44V53H40V39Z" fill="#A9B5FF" opacity=".5"/>
+    <path d="M29 42.2C29 40.832 30.517 40.01 31.66 40.759L38.797 45.437C39.842 46.122 39.842 47.654 38.797 48.339L31.66 53.017C30.517 53.766 29 52.945 29 51.577V42.2Z" fill="#F6F7FF"/>
+    <rect x="16" y="63" width="22" height="3.4" rx="1.7" fill="#B7C0F2"/>
+  </g>
+</svg>

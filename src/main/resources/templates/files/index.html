@@ -12,28 +12,16 @@
         <div class="brand-mark">P</div>
         <div class="drive-brand-copy">
             <strong>Panx 云盘</strong>
-            <span>个人空间</span>
         </div>
     </div>
 
     <form method="get" th:action="@{/app/files}" class="global-search-form">
         <input type="hidden" name="parentId" th:value="${listing.parentId}">
         <input type="search" name="keyword" th:value="${keyword}" placeholder="搜索文件、文件夹、类型">
-        <button type="submit" class="icon-button">搜</button>
+        <button type="submit" class="icon-button search-button">搜索</button>
     </form>
 
     <div class="drive-top-actions">
-        <details class="action-menu">
-            <summary class="button-primary compact-button">上传</summary>
-            <div class="menu-panel">
-                <button type="button" class="menu-item" onclick="document.getElementById('uploadInput').click()">上传文件</button>
-                <button type="button" class="menu-item" onclick="document.getElementById('uploadFolderInput').click()">上传文件夹</button>
-                <button type="button" class="menu-item" onclick="createFolder()">新建文件夹</button>
-                <button type="button" class="menu-item" onclick="createTextFile()">新建文本</button>
-                <button type="button" class="menu-item" onclick="createRemoteDownload()">远程下载</button>
-            </div>
-        </details>
-        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
         <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
         <form method="post" th:action="@{/logout}">
             <button type="submit" class="secondary compact-button">退出</button>
@@ -43,23 +31,19 @@
 
 <div class="drive-layout">
     <aside class="drive-sidebar">
-        <section class="space-card">
-            <span class="space-pill active">个人空间</span>
-        </section>
-
         <section class="nav-group">
             <p class="nav-group-title">主分区</p>
             <nav class="cloud-nav nav-stack">
                 <a class="cloud-nav-item active" th:href="@{/app/files}">
-                    <span class="cloud-nav-icon">文</span>
+                    <span class="cloud-nav-icon nav-icon-files">文</span>
                     <span>我的文件</span>
                 </a>
                 <a class="cloud-nav-item" th:href="@{/app/shares}">
-                    <span class="cloud-nav-icon">享</span>
+                    <span class="cloud-nav-icon nav-icon-shares">享</span>
                     <span>我分享的</span>
                 </a>
                 <a class="cloud-nav-item" th:href="@{/app/downloads}">
-                    <span class="cloud-nav-icon">下</span>
+                    <span class="cloud-nav-icon nav-icon-downloads">下</span>
                     <span>下载任务</span>
                 </a>
             </nav>
@@ -112,22 +96,45 @@
                 <table class="drive-table">
                     <thead>
                     <tr>
-                        <th>名称</th>
-                        <th>类型</th>
-                        <th>大小</th>
-                        <th>修改时间</th>
-                        <th>操作</th>
+                        <th class="sortable-column" data-sort-key="name" aria-sort="none">
+                            <button type="button" class="sort-button" data-sort-key="name">
+                                <span>名称</span>
+                                <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="sortable-column" data-sort-key="type" aria-sort="none">
+                            <button type="button" class="sort-button" data-sort-key="type">
+                                <span>类型</span>
+                                <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="sortable-column" data-sort-key="size" aria-sort="none">
+                            <button type="button" class="sort-button" data-sort-key="size">
+                                <span>大小</span>
+                                <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="sortable-column" data-sort-key="updatedAt" aria-sort="none">
+                            <button type="button" class="sort-button" data-sort-key="updatedAt">
+                                <span>修改时间</span>
+                                <span class="sort-indicator" aria-hidden="true">↕</span>
+                            </button>
+                        </th>
+                        <th class="action-column">操作</th>
                     </tr>
                     </thead>
-                    <tbody>
-                    <tr th:each="item : ${isSearchMode ? searchResults : listing.items}"
+                    <tbody id="fileTableBody">
+                    <tr th:each="item, itemStat : ${isSearchMode ? searchResults : listing.items}"
                         class="file-row"
                         th:attr="data-node-id=${item.id},
+                                 data-row-order=${itemStat.index},
                                  data-node-name=${item.name},
                                  data-parent-id=${item.parentId},
                                  data-node-type=${item.nodeType.name()},
                                  data-previewable=${item.previewable},
                                  data-icon-key=${item.iconKey},
+                                 data-size=${item.nodeType.name() == 'FOLDER' ? -1 : item.size},
+                                 data-updated-at=${#temporals.format(item.updatedAt, 'yyyy-MM-dd HH:mm:ss')},
                                  data-open-url=${item.nodeType.name() == 'FOLDER' ? '/app/files?parentId=' + item.id : ''},
                                  data-preview-page-url=${item.iconKey == 'video' or item.iconKey == 'audio' ? '/app/files/' + item.id + '/player' : (item.previewable ? '/app/files/' + item.id + '/preview' : '')}">
                         <td>
@@ -152,9 +159,14 @@
                         <td th:text="${item.nodeType.name() == 'FOLDER' ? '-' : item.sizeDisplay}">0.00 B</td>
                         <td th:text="${#temporals.format(item.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-01-01</td>
                         <td class="actions-cell">
-                            <details class="row-menu">
-                                <summary class="menu-trigger row-trigger">···</summary>
-                                <div class="menu-panel row-menu-panel">
+                            <div class="row-menu">
+                                <button type="button"
+                                        class="menu-trigger row-trigger row-menu-button"
+                                        aria-haspopup="menu"
+                                        aria-expanded="false">
+                                    ···
+                                </button>
+                                <div class="menu-panel row-menu-panel" hidden>
                                     <a class="menu-item"
                                        th:if="${item.nodeType.name() == 'FILE'}"
                                        th:href="@{'/api/files/' + ${item.id} + '/download'}">下载</a>
@@ -181,7 +193,7 @@
                                             th:attr="data-id=${item.id},data-type=${item.nodeType.name()}"
                                             onclick="deleteNode(this.dataset.id, this.dataset.type)">删除</button>
                                 </div>
-                            </details>
+                            </div>
                         </td>
                     </tr>
                     <tr th:if="${#lists.isEmpty(isSearchMode ? searchResults : listing.items)}">
@@ -308,18 +320,106 @@
     </div>
 </section>
 
+<div class="menu-panel row-menu-panel global-row-menu" id="rowActionMenu" hidden></div>
+
 <script th:inline="javascript">
     const currentParentId = /*[[${listing.parentId}]]*/ null;
     let pendingMoveNodeId = null;
     let pendingMoveNodeName = '';
     let pendingMoveNodeParentId = null;
     let currentUploadXhr = null;
+    const rowActionMenu = document.getElementById('rowActionMenu');
+    const fileTableBody = document.getElementById('fileTableBody');
+    const sortState = {key: null, direction: 'asc'};
 
     function showFlash(message, isError = false) {
         const flash = document.getElementById('flash');
         flash.textContent = message;
         flash.className = isError ? 'notice error visible' : 'notice success visible';
         setTimeout(() => flash.className = 'notice', 3000);
+    }
+
+    function parseRowTime(value) {
+        if (!value) return 0;
+        const [datePart = '', timePart = '00:00:00'] = value.split(' ');
+        const [year = 0, month = 0, day = 0] = datePart.split('-').map(Number);
+        const [hour = 0, minute = 0, second = 0] = timePart.split(':').map(Number);
+        return new Date(year, Math.max(0, month - 1), day, hour, minute, second).getTime();
+    }
+
+    function getRowTypeLabel(row) {
+        if (row.dataset.nodeType === 'FOLDER') return '文件夹';
+        switch (row.dataset.iconKey) {
+            case 'image':
+                return '图片';
+            case 'video':
+                return '视频';
+            case 'audio':
+                return '音频';
+            case 'text':
+                return '文档';
+            case 'pdf':
+                return 'PDF';
+            default:
+                return '文件';
+        }
+    }
+
+    function updateSortHeaders() {
+        document.querySelectorAll('.sortable-column').forEach(column => {
+            const key = column.dataset.sortKey;
+            const indicator = column.querySelector('.sort-indicator');
+            if (sortState.key !== key) {
+                column.setAttribute('aria-sort', 'none');
+                if (indicator) indicator.textContent = '↕';
+                return;
+            }
+            const ascending = sortState.direction === 'asc';
+            column.setAttribute('aria-sort', ascending ? 'ascending' : 'descending');
+            if (indicator) indicator.textContent = ascending ? '↑' : '↓';
+        });
+    }
+
+    function sortFileRows(key) {
+        if (!fileTableBody) return;
+        const rows = Array.from(fileTableBody.querySelectorAll('.file-row'));
+        if (rows.length === 0) return;
+
+        if (sortState.key === key) {
+            sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortState.key = key;
+            sortState.direction = 'asc';
+        }
+
+        const directionFactor = sortState.direction === 'asc' ? 1 : -1;
+        rows.sort((leftRow, rightRow) => {
+            if (key === 'name') {
+                const leftName = leftRow.dataset.nodeName || '';
+                const rightName = rightRow.dataset.nodeName || '';
+                const nameOrder = leftName.localeCompare(rightName, 'zh-CN', {numeric: true, sensitivity: 'base'});
+                if (nameOrder !== 0) return nameOrder * directionFactor;
+            } else if (key === 'type') {
+                const leftType = getRowTypeLabel(leftRow);
+                const rightType = getRowTypeLabel(rightRow);
+                const typeOrder = leftType.localeCompare(rightType, 'zh-CN', {numeric: true, sensitivity: 'base'});
+                if (typeOrder !== 0) return typeOrder * directionFactor;
+            } else if (key === 'size') {
+                const leftSize = Number(leftRow.dataset.size || 0);
+                const rightSize = Number(rightRow.dataset.size || 0);
+                if (leftSize !== rightSize) return (leftSize - rightSize) * directionFactor;
+            } else if (key === 'updatedAt') {
+                const leftTime = parseRowTime(leftRow.dataset.updatedAt);
+                const rightTime = parseRowTime(rightRow.dataset.updatedAt);
+                if (leftTime !== rightTime) return (leftTime - rightTime) * directionFactor;
+            }
+
+            return Number(leftRow.dataset.rowOrder) - Number(rightRow.dataset.rowOrder);
+        });
+
+        rows.forEach(row => fileTableBody.appendChild(row));
+        closeAllMenus();
+        updateSortHeaders();
     }
 
     function openDialog(dialogId) {
@@ -367,7 +467,7 @@
     }
 
     function closeAllMenus() {
-        document.querySelectorAll('.action-menu[open], .row-menu[open]').forEach(menu => {
+        document.querySelectorAll('.action-menu[open]').forEach(menu => {
             menu.removeAttribute('open');
             const panel = menu.querySelector('.menu-panel');
             if (panel) {
@@ -376,24 +476,55 @@
                 panel.style.left = '';
             }
         });
+        document.querySelectorAll('.row-menu.is-open').forEach(menu => {
+            menu.classList.remove('is-open');
+            const button = menu.querySelector('.row-menu-button');
+            if (button) {
+                button.setAttribute('aria-expanded', 'false');
+            }
+        });
+        rowActionMenu.hidden = true;
+        rowActionMenu.innerHTML = '';
+        rowActionMenu.classList.remove('menu-panel-floating');
+        rowActionMenu.style.top = '';
+        rowActionMenu.style.left = '';
+    }
+
+    function resolveMenuPosition(menuElement, preferredX = null, preferredY = null) {
+        const trigger = menuElement.querySelector('.row-menu-button');
+        const fallbackRect = (trigger || menuElement).getBoundingClientRect();
+        const hasPointerPosition = Number.isFinite(preferredX) && Number.isFinite(preferredY) && (preferredX > 0 || preferredY > 0);
+        const x = hasPointerPosition ? preferredX + 10 : fallbackRect.right - 10;
+        const y = hasPointerPosition ? preferredY + 10 : fallbackRect.bottom + 8;
+        return {
+            x: Math.max(12, Math.min(x, window.innerWidth - 196)),
+            y: Math.max(12, Math.min(y, window.innerHeight - 260))
+        };
     }
 
     function openRowMenuAt(detailsElement, x, y, allowToggle = false) {
         const panel = detailsElement.querySelector('.menu-panel');
+        const button = detailsElement.querySelector('.row-menu-button');
         if (!panel) return;
-        const wasOpen = detailsElement.hasAttribute('open') && panel.classList.contains('menu-panel-floating');
+        const wasOpen = detailsElement.classList.contains('is-open') && !rowActionMenu.hidden;
         closeAllMenus();
         if (allowToggle && wasOpen) {
             return;
         }
-        detailsElement.setAttribute('open', 'open');
-        panel.classList.add('menu-panel-floating');
-        panel.style.left = `${Math.max(12, Math.min(x, window.innerWidth - 196))}px`;
-        panel.style.top = `${Math.max(12, Math.min(y, window.innerHeight - 260))}px`;
+        const position = resolveMenuPosition(detailsElement, x, y);
+        detailsElement.classList.add('is-open');
+        if (button) {
+            button.setAttribute('aria-expanded', 'true');
+        }
+        rowActionMenu.innerHTML = panel.innerHTML;
+        rowActionMenu.hidden = false;
+        rowActionMenu.classList.add('menu-panel-floating');
+        rowActionMenu.style.left = `${position.x}px`;
+        rowActionMenu.style.top = `${position.y}px`;
     }
 
     function handleFileRowClick(row, event) {
-        if (event.target.closest('a, button, summary, details, input, textarea, select')) {
+        if (event.target.closest('a, button, summary, details, input, textarea, select, .menu-panel')) {
             return;
         }
         const {nodeType, previewable, openUrl, previewPageUrl} = row.dataset;
@@ -409,7 +540,9 @@
         if (menu) {
             event.preventDefault();
             event.stopPropagation();
-            openRowMenuAt(menu, event.clientX, event.clientY);
+            const x = Number.isFinite(event.clientX) ? event.clientX : null;
+            const y = Number.isFinite(event.clientY) ? event.clientY : null;
+            openRowMenuAt(menu, x, y);
         }
     }
 
@@ -737,16 +870,16 @@
     });
 
     document.addEventListener('click', event => {
-        if (!event.target.closest('.dialog-card, #dialogBackdrop, .action-menu, .row-menu')) {
+        if (!event.target.closest('.dialog-card, #dialogBackdrop, .action-menu, .row-menu, #rowActionMenu')) {
             closeAllMenus();
         }
     });
 
-    document.querySelectorAll('.row-menu > summary').forEach(summary => {
-        summary.addEventListener('click', event => {
+    document.querySelectorAll('.row-menu-button').forEach(button => {
+        button.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
-            openRowMenuAt(summary.parentElement, event.clientX, event.clientY, true);
+            openRowMenuAt(button.parentElement, null, null, true);
         });
     });
 
@@ -767,8 +900,16 @@
         row.addEventListener('click', event => handleFileRowClick(row, event));
     });
 
+    document.querySelectorAll('.sort-button').forEach(button => {
+        button.addEventListener('click', event => {
+            event.preventDefault();
+            sortFileRows(button.dataset.sortKey);
+        });
+    });
+
     window.addEventListener('resize', closeAllMenus);
     document.addEventListener('scroll', closeAllMenus, true);
+    updateSortHeaders();
 
 </script>
 </body>

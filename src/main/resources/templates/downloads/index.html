@@ -12,17 +12,15 @@
         <div class="brand-mark">P</div>
         <div class="drive-brand-copy">
             <strong>Panx 云盘</strong>
-            <span>个人空间</span>
         </div>
     </div>
 
     <form method="get" th:action="@{/app/files}" class="global-search-form">
         <input type="search" name="keyword" placeholder="搜索文件、文件夹、类型">
-        <button type="submit" class="icon-button">搜</button>
+        <button type="submit" class="icon-button search-button">搜索</button>
     </form>
 
     <div class="drive-top-actions">
-        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
         <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
         <form method="post" th:action="@{/logout}">
             <button type="submit" class="secondary compact-button">退出</button>
@@ -32,23 +30,19 @@
 
 <div class="drive-layout">
     <aside class="drive-sidebar">
-        <section class="space-card">
-            <span class="space-pill active">个人空间</span>
-        </section>
-
         <section class="nav-group">
             <p class="nav-group-title">主分区</p>
             <nav class="cloud-nav nav-stack">
                 <a class="cloud-nav-item" th:href="@{/app/files}">
-                    <span class="cloud-nav-icon">文</span>
+                    <span class="cloud-nav-icon nav-icon-files">文</span>
                     <span>我的文件</span>
                 </a>
                 <a class="cloud-nav-item" th:href="@{/app/shares}">
-                    <span class="cloud-nav-icon">享</span>
+                    <span class="cloud-nav-icon nav-icon-shares">享</span>
                     <span>我分享的</span>
                 </a>
                 <a class="cloud-nav-item active" th:href="@{/app/downloads}">
-                    <span class="cloud-nav-icon">下</span>
+                    <span class="cloud-nav-icon nav-icon-downloads">下</span>
                     <span>下载任务</span>
                 </a>
             </nav>
@@ -89,6 +83,29 @@
     </main>
 </div>
 
+<div class="dialog-backdrop" id="dialogBackdrop" hidden>
+    <section class="dialog-card" id="remoteDownloadDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Remote Download</p>
+                <h3>远程下载</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <label>
+            <span>下载地址</span>
+            <input id="remoteDownloadUrlInput" type="url" maxlength="2048" placeholder="请输入 HTTP/HTTPS 地址">
+        </label>
+        <label>
+            <span>保存文件名</span>
+            <input id="remoteDownloadNameInput" type="text" maxlength="255" placeholder="可选，留空自动推断">
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="submitRemoteDownload()">创建任务</button>
+        </div>
+    </section>
+</div>
+
 <script th:inline="javascript">
     const initialDownloadTasks = /*[[${downloadTasks}]]*/ [];
 
@@ -97,6 +114,18 @@
         flash.textContent = message;
         flash.className = isError ? 'notice error visible' : 'notice success visible';
         setTimeout(() => flash.className = 'notice', 3000);
+    }
+
+    function openDialog(dialogId) {
+        const backdrop = document.getElementById('dialogBackdrop');
+        backdrop.hidden = false;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
+        document.getElementById(dialogId).hidden = false;
+    }
+
+    function closeDialogs() {
+        document.getElementById('dialogBackdrop').hidden = true;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
     }
 
     async function request(url, options = {}) {
@@ -205,9 +234,18 @@
     }
 
     async function createRemoteDownload() {
-        const sourceUrl = prompt('请输入要下载的 HTTP/HTTPS 地址');
-        if (!sourceUrl) return;
-        const fileNameRaw = prompt('可选：自定义保存文件名，留空则自动推断', '') ?? '';
+        document.getElementById('remoteDownloadUrlInput').value = '';
+        document.getElementById('remoteDownloadNameInput').value = '';
+        openDialog('remoteDownloadDialog');
+    }
+
+    async function submitRemoteDownload() {
+        const sourceUrl = document.getElementById('remoteDownloadUrlInput').value.trim();
+        const fileNameRaw = document.getElementById('remoteDownloadNameInput').value.trim();
+        if (!sourceUrl) {
+            showFlash('请输入下载地址。', true);
+            return;
+        }
         try {
             await request('/api/files/download-tasks', {
                 method: 'POST',
@@ -217,6 +255,7 @@
                     fileName: fileNameRaw.trim() === '' ? null : fileNameRaw.trim()
                 })
             });
+            closeDialogs();
             showFlash('远程下载任务已创建。');
             refreshDownloadTasks();
         } catch (error) {
@@ -234,6 +273,18 @@
             showFlash(error.message, true);
         }
     }
+
+    document.getElementById('dialogBackdrop').addEventListener('click', event => {
+        if (event.target.id === 'dialogBackdrop') {
+            closeDialogs();
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeDialogs();
+        }
+    });
 
     renderDownloadTasks(initialDownloadTasks);
     window.setInterval(refreshDownloadTasks, 4000);

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none">
+  <defs>
+    <linearGradient id="doc-surface" x1="12" y1="4" x2="50" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF1F6"/>
+    </linearGradient>
+    <linearGradient id="doc-fold" x1="37" y1="4" x2="52" y2="21" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F7FA"/>
+      <stop offset="1" stop-color="#DCE3EC"/>
+    </linearGradient>
+    <filter id="doc-shadow" x="4" y="2" width="52" height="78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <g filter="url(#doc-shadow)">
+    <path d="M16 4H36L52 20V68C52 72.418 48.418 76 44 76H16C11.582 76 8 72.418 8 68V12C8 7.582 11.582 4 16 4Z" fill="url(#doc-surface)"/>
+    <path d="M36 4V16C36 18.209 37.791 20 40 20H52" fill="#E7ECF2"/>
+    <path d="M36 4L52 20H40C37.791 20 36 18.209 36 16V4Z" fill="url(#doc-fold)"/>
+    <path d="M16 4.5H35.4L51.5 20.6V68C51.5 72.142 48.142 75.5 44 75.5H16C11.858 75.5 8.5 72.142 8.5 68V12C8.5 7.858 11.858 4.5 16 4.5Z" stroke="#D9E0E8"/>
+    <rect x="16" y="14" width="28" height="8" rx="4" fill="#9CA7B5"/>
+    <rect x="16" y="35" width="30" height="3.4" rx="1.7" fill="#A8B2BF"/>
+    <rect x="16" y="43" width="25" height="3.4" rx="1.7" fill="#BDC6D1"/>
+    <rect x="16" y="51" width="23" height="3.4" rx="1.7" fill="#CFD6DE"/>
+    <rect x="16" y="59" width="19" height="3.4" rx="1.7" fill="#E1E6EC"/>
+  </g>
+</svg>

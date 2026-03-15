@@ -8,10 +8,19 @@
 </head>
 <body class="auth-page">
 <main class="auth-card">
-    <div>
-        <p class="eyebrow">Panx MVP</p>
-        <h1>文件网盘登录</h1>
-        <p class="muted">默认管理员账号由配置项初始化，可在 `application.yaml` 或环境变量中调整。</p>
+    <div class="auth-hero">
+        <div class="drive-brand">
+            <div class="brand-mark">P</div>
+            <div class="drive-brand-copy">
+                <strong>Panx 云盘</strong>
+                <span>Sign in to your workspace</span>
+            </div>
+        </div>
+        <div class="auth-copy">
+            <p class="eyebrow">Panx Workspace</p>
+            <h1>文件网盘登录</h1>
+            <p class="muted">默认管理员账号由配置项初始化，可在 `application.yaml` 或环境变量中调整。</p>
+        </div>
     </div>
 
     <div class="notice error" th:if="${hasError}">用户名或密码错误。</div>
@@ -28,6 +37,8 @@
         </label>
         <button type="submit">登录</button>
     </form>
+
+    <p class="auth-footnote">设计语言已切换为更克制的系统风格，后台与预览页保持一致。</p>
 </main>
 </body>
 </html>

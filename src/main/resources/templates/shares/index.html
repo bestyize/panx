@@ -12,17 +12,15 @@
         <div class="brand-mark">P</div>
         <div class="drive-brand-copy">
             <strong>Panx 云盘</strong>
-            <span>个人空间</span>
         </div>
     </div>
 
     <form method="get" th:action="@{/app/files}" class="global-search-form">
         <input type="search" name="keyword" placeholder="搜索文件、文件夹、类型">
-        <button type="submit" class="icon-button">搜</button>
+        <button type="submit" class="icon-button search-button">搜索</button>
     </form>
 
     <div class="drive-top-actions">
-        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
         <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
         <form method="post" th:action="@{/logout}">
             <button type="submit" class="secondary compact-button">退出</button>
@@ -32,23 +30,19 @@
 
 <div class="drive-layout">
     <aside class="drive-sidebar">
-        <section class="space-card">
-            <span class="space-pill active">个人空间</span>
-        </section>
-
         <section class="nav-group">
             <p class="nav-group-title">主分区</p>
             <nav class="cloud-nav nav-stack">
                 <a class="cloud-nav-item" th:href="@{/app/files}">
-                    <span class="cloud-nav-icon">文</span>
+                    <span class="cloud-nav-icon nav-icon-files">文</span>
                     <span>我的文件</span>
                 </a>
                 <a class="cloud-nav-item active" th:href="@{/app/shares}">
-                    <span class="cloud-nav-icon">享</span>
+                    <span class="cloud-nav-icon nav-icon-shares">享</span>
                     <span>我分享的</span>
                 </a>
                 <a class="cloud-nav-item" th:href="@{/app/downloads}">
-                    <span class="cloud-nav-icon">下</span>
+                    <span class="cloud-nav-icon nav-icon-downloads">下</span>
                     <span>下载任务</span>
                 </a>
             </nav>
@@ -86,7 +80,7 @@
                             <th>访问次数</th>
                             <th>提取码</th>
                             <th>有效期</th>
-                            <th>操作</th>
+                            <th class="action-column">操作</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -112,9 +106,14 @@
                             </td>
                             <td th:text="${share.expiresAt != null ? #temporals.format(share.expiresAt, 'yyyy-MM-dd HH:mm:ss') : '默认策略'}">有效期</td>
                             <td class="actions-cell">
-                                <details class="row-menu">
-                                    <summary class="menu-trigger row-trigger">···</summary>
-                                    <div class="menu-panel row-menu-panel">
+                                <div class="row-menu">
+                                    <button type="button"
+                                            class="menu-trigger row-trigger row-menu-button"
+                                            aria-haspopup="menu"
+                                            aria-expanded="false">
+                                        ···
+                                    </button>
+                                    <div class="menu-panel row-menu-panel" hidden>
                                         <a class="menu-item"
                                            th:href="@{'/share/' + ${share.shareToken}}"
                                            target="_blank">打开分享页</a>
@@ -127,7 +126,7 @@
                                                 th:attr="data-id=${share.id}"
                                                 onclick="cancelShare(this.dataset.id)">取消分享</button>
                                     </div>
-                                </details>
+                                </div>
                             </td>
                         </tr>
                         </tbody>
@@ -142,6 +141,8 @@
         </section>
     </main>
 </div>
+
+<div class="menu-panel row-menu-panel global-row-menu" id="rowActionMenu" hidden></div>
 
 <div class="dialog-backdrop" id="dialogBackdrop" hidden>
     <section class="dialog-card" id="shareDialog" hidden>
@@ -165,6 +166,8 @@
 </div>
 
 <script>
+    const rowActionMenu = document.getElementById('rowActionMenu');
+
     function showFlash(message, isError = false) {
         const flash = document.getElementById('flash');
         flash.textContent = message;
@@ -173,29 +176,51 @@
     }
 
     function closeAllMenus() {
-        document.querySelectorAll('.row-menu[open]').forEach(menu => {
-            menu.removeAttribute('open');
-            const panel = menu.querySelector('.menu-panel');
-            if (panel) {
-                panel.classList.remove('menu-panel-floating');
-                panel.style.top = '';
-                panel.style.left = '';
+        document.querySelectorAll('.row-menu.is-open').forEach(menu => {
+            menu.classList.remove('is-open');
+            const button = menu.querySelector('.row-menu-button');
+            if (button) {
+                button.setAttribute('aria-expanded', 'false');
             }
         });
+        rowActionMenu.hidden = true;
+        rowActionMenu.innerHTML = '';
+        rowActionMenu.classList.remove('menu-panel-floating');
+        rowActionMenu.style.top = '';
+        rowActionMenu.style.left = '';
     }
 
-    function openRowMenuAt(detailsElement, x, y, allowToggle = false) {
-        const panel = detailsElement.querySelector('.menu-panel');
+    function resolveMenuPosition(menuElement, preferredX = null, preferredY = null) {
+        const trigger = menuElement.querySelector('.row-menu-button');
+        const fallbackRect = (trigger || menuElement).getBoundingClientRect();
+        const hasPointerPosition = Number.isFinite(preferredX) && Number.isFinite(preferredY) && (preferredX > 0 || preferredY > 0);
+        const x = hasPointerPosition ? preferredX + 10 : fallbackRect.right - 10;
+        const y = hasPointerPosition ? preferredY + 10 : fallbackRect.bottom + 8;
+        return {
+            x: Math.max(12, Math.min(x, window.innerWidth - 196)),
+            y: Math.max(12, Math.min(y, window.innerHeight - 260))
+        };
+    }
+
+    function openRowMenuAt(menuElement, x, y, allowToggle = false) {
+        const panel = menuElement.querySelector('.menu-panel');
+        const button = menuElement.querySelector('.row-menu-button');
         if (!panel) return;
-        const wasOpen = detailsElement.hasAttribute('open') && panel.classList.contains('menu-panel-floating');
+        const wasOpen = menuElement.classList.contains('is-open') && !rowActionMenu.hidden;
         closeAllMenus();
         if (allowToggle && wasOpen) {
             return;
         }
-        detailsElement.setAttribute('open', 'open');
-        panel.classList.add('menu-panel-floating');
-        panel.style.left = `${Math.max(12, Math.min(x, window.innerWidth - 196))}px`;
-        panel.style.top = `${Math.max(12, Math.min(y, window.innerHeight - 260))}px`;
+        const position = resolveMenuPosition(menuElement, x, y);
+        menuElement.classList.add('is-open');
+        if (button) {
+            button.setAttribute('aria-expanded', 'true');
+        }
+        rowActionMenu.innerHTML = panel.innerHTML;
+        rowActionMenu.hidden = false;
+        rowActionMenu.classList.add('menu-panel-floating');
+        rowActionMenu.style.left = `${position.x}px`;
+        rowActionMenu.style.top = `${position.y}px`;
     }
 
     function openDialog(dialogId) {
@@ -286,7 +311,7 @@
     });
 
     document.addEventListener('click', event => {
-        if (!event.target.closest('.row-menu, .dialog-card, #dialogBackdrop')) {
+        if (!event.target.closest('.row-menu, #rowActionMenu, .dialog-card, #dialogBackdrop')) {
             closeAllMenus();
         }
     });
@@ -298,11 +323,11 @@
         }
     });
 
-    document.querySelectorAll('.row-menu > summary').forEach(summary => {
-        summary.addEventListener('click', event => {
+    document.querySelectorAll('.row-menu-button').forEach(button => {
+        button.addEventListener('click', event => {
             event.preventDefault();
             event.stopPropagation();
-            openRowMenuAt(summary.parentElement, event.clientX, event.clientY, true);
+            openRowMenuAt(button.parentElement, event.clientX, event.clientY, true);
         });
     });
 

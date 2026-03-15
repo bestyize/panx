@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none">
+  <defs>
+    <linearGradient id="pdf-doc" x1="10" y1="4" x2="52" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#FFF2EF"/>
+    </linearGradient>
+    <linearGradient id="pdf-accent" x1="16" y1="14" x2="44" y2="22" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF7E72"/>
+      <stop offset="1" stop-color="#E84F43"/>
+    </linearGradient>
+    <filter id="pdf-shadow" x="4" y="2" width="52" height="78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <g filter="url(#pdf-shadow)">
+    <path d="M16 4H36L52 20V68C52 72.418 48.418 76 44 76H16C11.582 76 8 72.418 8 68V12C8 7.582 11.582 4 16 4Z" fill="url(#pdf-doc)"/>
+    <path d="M36 4V16C36 18.209 37.791 20 40 20H52" fill="#FBE2DD"/>
+    <path d="M36 4L52 20H40C37.791 20 36 18.209 36 16V4Z" fill="#F5D0C9"/>
+    <path d="M16 4.5H35.4L51.5 20.6V68C51.5 72.142 48.142 75.5 44 75.5H16C11.858 75.5 8.5 72.142 8.5 68V12C8.5 7.858 11.858 4.5 16 4.5Z" stroke="#ECD8D2"/>
+    <rect x="16" y="14" width="28" height="8" rx="4" fill="url(#pdf-accent)"/>
+    <path d="M20 56V38.5H27C29.761 38.5 32 40.739 32 43.5C32 46.261 29.761 48.5 27 48.5H23.8V56H20Z" fill="#E84F43"/>
+    <path d="M35.2 38.5H40.3C44.888 38.5 48.607 42.219 48.607 46.807C48.607 51.395 44.888 55.114 40.3 55.114H35.2V38.5Z" fill="#E84F43"/>
+    <path d="M24 45.6H26C27.16 45.6 28.1 44.66 28.1 43.5C28.1 42.34 27.16 41.4 26 41.4H24V45.6Z" fill="#FFF8F6"/>
+    <path d="M39 41.8H40.1C42.586 41.8 44.6 43.814 44.6 46.3C44.6 48.786 42.586 50.8 40.1 50.8H39V41.8Z" fill="#FFF8F6"/>
+  </g>
+</svg>

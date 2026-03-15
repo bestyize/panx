@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none">
+  <defs>
+    <linearGradient id="image-doc" x1="10" y1="4" x2="52" y2="76" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEF5FF"/>
+    </linearGradient>
+    <linearGradient id="image-frame" x1="17" y1="34" x2="47" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF6FF"/>
+      <stop offset="1" stop-color="#D8EBFF"/>
+    </linearGradient>
+    <linearGradient id="image-sky" x1="19" y1="36" x2="45" y2="52" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8FDBFF"/>
+      <stop offset="1" stop-color="#579EFF"/>
+    </linearGradient>
+    <filter id="image-shadow" x="4" y="2" width="52" height="78" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity=".12"/>
+    </filter>
+  </defs>
+  <g filter="url(#image-shadow)">
+    <path d="M16 4H36L52 20V68C52 72.418 48.418 76 44 76H16C11.582 76 8 72.418 8 68V12C8 7.582 11.582 4 16 4Z" fill="url(#image-doc)"/>
+    <path d="M36 4V16C36 18.209 37.791 20 40 20H52" fill="#E6EEF9"/>
+    <path d="M36 4L52 20H40C37.791 20 36 18.209 36 16V4Z" fill="#D7E4F4"/>
+    <path d="M16 4.5H35.4L51.5 20.6V68C51.5 72.142 48.142 75.5 44 75.5H16C11.858 75.5 8.5 72.142 8.5 68V12C8.5 7.858 11.858 4.5 16 4.5Z" stroke="#D6E1EE"/>
+    <rect x="16" y="14" width="28" height="8" rx="4" fill="#6AB9FF"/>
+    <rect x="15.5" y="33.5" width="33" height="25" rx="6.5" fill="url(#image-frame)" stroke="#C7DAEF"/>
+    <path d="M19 48C19 43.582 22.582 40 27 40H45V52.5C45 55.538 42.538 58 39.5 58H24.5C21.462 58 19 55.538 19 52.5V48Z" fill="url(#image-sky)"/>
+    <circle cx="25.5" cy="41.5" r="3.2" fill="#FFD35C"/>
+    <path d="M19 54L27.2 45.8C28.294 44.706 30.067 44.706 31.16 45.8L35.6 50.24L39.4 46.44C40.574 45.266 42.478 45.266 43.652 46.44L48.5 51.288V52.5C48.5 55.538 46.038 58 43 58H24.5C21.462 58 19 55.538 19 52.5V54Z" fill="#5EC88B"/>
+    <rect x="16" y="63" width="22" height="3.4" rx="1.7" fill="#B5CBE8"/>
+  </g>
+</svg>
