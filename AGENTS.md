@@ -30,6 +30,7 @@
 - 文件上传 / 下载 / 删除 / 重命名 / 移动
 - 文件列表与搜索
 - 文件分享链接
+- 文件夹分享链接
 - 图片 / 文本基础预览
 - Thymeleaf 页面
 - 基础测试
@@ -67,7 +68,7 @@
 
 ### 3.1 明确限制
 
-1. MVP 阶段**不要引入 React / Vue / Angular 独立前端工程**。
+1. MVP 可以引入 Vue / Ant Design**。
 2. 前端页面优先使用 `Thymeleaf + 原生 JavaScript + CSS`。
 3. 文件内容放本地存储，元数据放 MySQL。
 4. 不要无故替换为 JPA、MongoDB、Redis、对象存储等其他实现。

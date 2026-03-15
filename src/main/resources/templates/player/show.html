@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${pageTitle} + ' - Panx Player'">Panx Player</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="player-page">
+<main class="player-shell">
+    <section class="player-stage">
+        <div class="player-stage-head">
+            <a class="back-link" th:href="${backUrl}">返回上一页</a>
+            <span class="type-pill" th:text="${media.iconKey == 'video' ? '视频播放' : '音频播放'}">视频播放</span>
+        </div>
+        <video class="cinema-player"
+               th:if="${media.iconKey == 'video'}"
+               controls
+               autoplay
+               preload="metadata">
+            <source th:src="${streamUrl}" th:type="${media.contentType}">
+        </video>
+        <div class="audio-stage" th:if="${media.iconKey == 'audio'}">
+            <div class="audio-stage-art">
+                <span class="file-type-icon icon-audio">AUD</span>
+                <h2 th:text="${media.name}">audio.mp3</h2>
+            </div>
+            <audio class="audio-player cinema-audio"
+                   controls
+                   autoplay
+                   preload="metadata">
+                <source th:src="${streamUrl}" th:type="${media.contentType}">
+            </audio>
+        </div>
+    </section>
+
+    <aside class="player-sidebar">
+        <section class="panel">
+            <p class="eyebrow">Now Playing</p>
+            <h1 th:text="${media.name}">video.mp4</h1>
+            <p class="muted" th:text="'类型：' + ${media.iconKey == 'video' ? '视频' : '音频'}">类型</p>
+            <p class="muted" th:text="'大小：' + ${media.sizeDisplay}">大小</p>
+            <p class="muted" th:if="${media.contentType != null}" th:text="'格式：' + ${media.contentType}">格式</p>
+            <div class="player-actions">
+                <a class="button-link" th:href="${downloadUrl}">下载文件</a>
+                <a class="button-link secondary-link" th:href="${streamUrl}" target="_blank">打开原始流</a>
+            </div>
+        </section>
+
+        <section class="panel">
+            <p class="eyebrow" th:text="${isSharePlayer} ? 'Share' : 'Library'">Library</p>
+            <p class="muted" th:if="${isSharePlayer}">当前页面来自分享链接，可直接播放，不暴露后台入口。</p>
+            <p class="muted" th:unless="${isSharePlayer}">当前页面来自文件后台，适合播放大视频并拖动进度条。</p>
+        </section>
+    </aside>
+</main>
+</body>
+</html>

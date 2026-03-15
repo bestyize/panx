@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panx 已分享</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="cloud-body drive-body">
+<header class="drive-topbar">
+    <div class="drive-brand">
+        <div class="brand-mark">P</div>
+        <div class="drive-brand-copy">
+            <strong>Panx 云盘</strong>
+            <span>个人空间</span>
+        </div>
+    </div>
+
+    <form method="get" th:action="@{/app/files}" class="global-search-form">
+        <input type="search" name="keyword" placeholder="搜索文件、文件夹、类型">
+        <button type="submit" class="icon-button">搜</button>
+    </form>
+
+    <div class="drive-top-actions">
+        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
+        <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit" class="secondary compact-button">退出</button>
+        </form>
+    </div>
+</header>
+
+<div class="drive-layout">
+    <aside class="drive-sidebar">
+        <section class="space-card">
+            <span class="space-pill active">个人空间</span>
+        </section>
+
+        <section class="nav-group">
+            <p class="nav-group-title">主分区</p>
+            <nav class="cloud-nav nav-stack">
+                <a class="cloud-nav-item" th:href="@{/app/files}">
+                    <span class="cloud-nav-icon">文</span>
+                    <span>我的文件</span>
+                </a>
+                <a class="cloud-nav-item active" th:href="@{/app/shares}">
+                    <span class="cloud-nav-icon">享</span>
+                    <span>我分享的</span>
+                </a>
+                <a class="cloud-nav-item" th:href="@{/app/downloads}">
+                    <span class="cloud-nav-icon">下</span>
+                    <span>下载任务</span>
+                </a>
+            </nav>
+        </section>
+    </aside>
+
+    <main class="drive-main">
+        <section class="drive-main-panel">
+            <div class="drive-toolbar">
+                <div class="toolbar-main">
+                    <div class="breadcrumbs drive-breadcrumbs">
+                        <a th:href="@{/app/files}">我的文件</a>
+                        <span>/</span>
+                        <span>我分享的</span>
+                    </div>
+                    <div class="drive-subhead">
+                        <strong>已分享项目</strong>
+                        <span class="muted">集中管理当前账号创建的所有分享链接</span>
+                    </div>
+                </div>
+                <div class="toolbar-side">
+                    <span class="summary-badge" th:text="${#lists.size(activeShares)} + ' 项'">0 项</span>
+                </div>
+            </div>
+
+            <div class="notice" id="flash"></div>
+
+            <div class="file-table-card">
+                <div class="table-wrap" th:if="${!#lists.isEmpty(activeShares)}">
+                    <table class="drive-table">
+                        <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>类型</th>
+                            <th>访问次数</th>
+                            <th>提取码</th>
+                            <th>有效期</th>
+                            <th>操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="share : ${activeShares}">
+                            <td>
+                                <div class="name-cell">
+                                    <span class="file-type-icon"
+                                          th:classappend="${share.nodeType.name() == 'FOLDER'} ? ' icon-folder' : ' icon-file'"
+                                          th:text="${share.nodeType.name() == 'FOLDER' ? 'DIR' : 'FIL'}">
+                                        FIL
+                                    </span>
+                                    <span th:text="${share.fileName}">项目名</span>
+                                </div>
+                            </td>
+                            <td th:text="${share.nodeType.name() == 'FOLDER' ? '文件夹' : '文件'}">文件</td>
+                            <td th:text="${share.accessCount}">0</td>
+                            <td>
+                                <span class="status-pill"
+                                      th:classappend="${share.hasExtractCode} ? ' status-warn' : ' status-ok'"
+                                      th:text="${share.hasExtractCode ? '已设置' : '无'}">
+                                    无
+                                </span>
+                            </td>
+                            <td th:text="${share.expiresAt != null ? #temporals.format(share.expiresAt, 'yyyy-MM-dd HH:mm:ss') : '默认策略'}">有效期</td>
+                            <td class="actions-cell">
+                                <details class="row-menu">
+                                    <summary class="menu-trigger row-trigger">···</summary>
+                                    <div class="menu-panel row-menu-panel">
+                                        <a class="menu-item"
+                                           th:href="@{'/share/' + ${share.shareToken}}"
+                                           target="_blank">打开分享页</a>
+                                        <button type="button"
+                                                class="menu-item"
+                                                th:attr="data-url=${'/share/' + share.shareToken}"
+                                                onclick="copyExistingShare(this.dataset.url)">复制链接</button>
+                                        <button type="button"
+                                                class="menu-item danger"
+                                                th:attr="data-id=${share.id}"
+                                                onclick="cancelShare(this.dataset.id)">取消分享</button>
+                                    </div>
+                                </details>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="empty-state" th:if="${#lists.isEmpty(activeShares)}">
+                    <p>当前还没有可用分享。</p>
+                    <p class="muted">回到“全部文件”页，在文件或文件夹行中打开“操作”菜单即可创建分享。</p>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="dialog-backdrop" id="dialogBackdrop" hidden>
+    <section class="dialog-card" id="shareDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Share</p>
+                <h3>分享链接</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <p class="muted" id="shareDialogHint">可以直接复制下面的链接。</p>
+        <label>
+            <span>分享地址</span>
+            <input id="shareUrlInput" type="text" readonly>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="copyShareUrl()">复制链接</button>
+            <a class="button-link secondary-link" id="shareOpenLink" target="_blank">打开分享页</a>
+        </div>
+    </section>
+</div>
+
+<script>
+    function showFlash(message, isError = false) {
+        const flash = document.getElementById('flash');
+        flash.textContent = message;
+        flash.className = isError ? 'notice error visible' : 'notice success visible';
+        setTimeout(() => flash.className = 'notice', 3000);
+    }
+
+    function closeAllMenus() {
+        document.querySelectorAll('.row-menu[open]').forEach(menu => {
+            menu.removeAttribute('open');
+            const panel = menu.querySelector('.menu-panel');
+            if (panel) {
+                panel.classList.remove('menu-panel-floating');
+                panel.style.top = '';
+                panel.style.left = '';
+            }
+        });
+    }
+
+    function openRowMenuAt(detailsElement, x, y, allowToggle = false) {
+        const panel = detailsElement.querySelector('.menu-panel');
+        if (!panel) return;
+        const wasOpen = detailsElement.hasAttribute('open') && panel.classList.contains('menu-panel-floating');
+        closeAllMenus();
+        if (allowToggle && wasOpen) {
+            return;
+        }
+        detailsElement.setAttribute('open', 'open');
+        panel.classList.add('menu-panel-floating');
+        panel.style.left = `${Math.max(12, Math.min(x, window.innerWidth - 196))}px`;
+        panel.style.top = `${Math.max(12, Math.min(y, window.innerHeight - 260))}px`;
+    }
+
+    function openDialog(dialogId) {
+        closeAllMenus();
+        const backdrop = document.getElementById('dialogBackdrop');
+        backdrop.hidden = false;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
+        document.getElementById(dialogId).hidden = false;
+    }
+
+    function closeDialogs() {
+        document.getElementById('dialogBackdrop').hidden = true;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
+    }
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {'Content-Type': 'application/json', ...(options.headers || {})},
+            credentials: 'same-origin',
+            ...options
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.message || '请求失败');
+            }
+            throw new Error('请求失败');
+        }
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        return response;
+    }
+
+    function openShareDialog(shareUrl, hint) {
+        document.getElementById('shareUrlInput').value = shareUrl;
+        document.getElementById('shareOpenLink').href = shareUrl;
+        document.getElementById('shareDialogHint').textContent = hint;
+        openDialog('shareDialog');
+    }
+
+    async function copyShareUrl() {
+        const input = document.getElementById('shareUrlInput');
+        input.focus();
+        input.select();
+        try {
+            if (navigator.clipboard && window.isSecureContext && document.hasFocus()) {
+                await navigator.clipboard.writeText(input.value);
+            } else {
+                document.execCommand('copy');
+            }
+            showFlash('分享链接已复制。');
+        } catch (error) {
+            showFlash('自动复制失败，请手动复制输入框中的链接。', true);
+        }
+    }
+
+    async function copyExistingShare(path) {
+        const shareUrl = `${location.origin}${path}`;
+        openShareDialog(shareUrl, '当前浏览器未允许自动复制，可手动复制下面的链接。');
+        try {
+            if (navigator.clipboard && window.isSecureContext && document.hasFocus()) {
+                await navigator.clipboard.writeText(shareUrl);
+                document.getElementById('shareDialogHint').textContent = '链接已复制到剪贴板，也可以从下面再次复制。';
+                showFlash('分享链接已复制。');
+            }
+        } catch (error) {
+            showFlash('自动复制失败，请手动复制输入框中的链接。', true);
+        }
+    }
+
+    async function cancelShare(id) {
+        if (!confirm('确认取消该分享吗？')) return;
+        try {
+            await request(`/api/shares/${id}`, {method: 'DELETE'});
+            showFlash('分享已取消。');
+            location.reload();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    document.getElementById('dialogBackdrop').addEventListener('click', event => {
+        if (event.target.id === 'dialogBackdrop') {
+            closeDialogs();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!event.target.closest('.row-menu, .dialog-card, #dialogBackdrop')) {
+            closeAllMenus();
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeAllMenus();
+            closeDialogs();
+        }
+    });
+
+    document.querySelectorAll('.row-menu > summary').forEach(summary => {
+        summary.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            openRowMenuAt(summary.parentElement, event.clientX, event.clientY, true);
+        });
+    });
+
+    window.addEventListener('resize', closeAllMenus);
+    document.addEventListener('scroll', closeAllMenus, true);
+</script>
+</body>
+</html>

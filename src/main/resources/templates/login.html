@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panx 登录</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="auth-page">
+<main class="auth-card">
+    <div>
+        <p class="eyebrow">Panx MVP</p>
+        <h1>文件网盘登录</h1>
+        <p class="muted">默认管理员账号由配置项初始化，可在 `application.yaml` 或环境变量中调整。</p>
+    </div>
+
+    <div class="notice error" th:if="${hasError}">用户名或密码错误。</div>
+    <div class="notice success" th:if="${loggedOut}">已安全退出。</div>
+
+    <form method="post" th:action="@{/login}" class="stack">
+        <label>
+            <span>用户名</span>
+            <input type="text" name="username" autocomplete="username" required>
+        </label>
+        <label>
+            <span>密码</span>
+            <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button type="submit">登录</button>
+    </form>
+</main>
+</body>
+</html>

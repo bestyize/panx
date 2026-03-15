@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panx 分享</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="share-page">
+<main class="share-card share-card-wide">
+    <div class="share-hero">
+        <div>
+            <p class="eyebrow">Panx Share</p>
+            <div class="name-cell">
+                <span class="file-type-icon"
+                      th:classappend="| icon-${share.iconKey}|"
+                      th:text="${share.iconKey == 'folder' ? 'DIR' : share.iconKey == 'image' ? 'IMG' : share.iconKey == 'video' ? 'VID' : share.iconKey == 'audio' ? 'AUD' : share.iconKey == 'text' ? 'TXT' : share.iconKey == 'pdf' ? 'PDF' : 'FIL'}">
+                    FIL
+                </span>
+                <h1 th:text="${share.fileName}">shared-file.txt</h1>
+            </div>
+        </div>
+    </div>
+
+    <div class="share-meta">
+        <p class="muted" th:text="'类型：' + ${share.nodeType.name() == 'FOLDER' ? '文件夹' : share.iconKey == 'image' ? '图片' : share.iconKey == 'video' ? '视频' : share.iconKey == 'audio' ? '音频' : share.iconKey == 'text' ? '文本' : '文件'}">类型</p>
+        <p class="muted" th:if="${share.nodeType.name() == 'FILE'}" th:text="'大小：' + ${share.sizeDisplay}">大小</p>
+        <p class="muted" th:if="${share.expiresAt != null}" th:text="'有效期至：' + ${#temporals.format(share.expiresAt, 'yyyy-MM-dd HH:mm:ss')}">有效期</p>
+        <p class="muted" th:text="${share.hasExtractCode ? '访问前需输入提取码' : '可直接访问当前分享内容'}">提示</p>
+    </div>
+
+    <div class="notice visible" id="shareFlash">
+        <span th:text="${(share.hasExtractCode and !shareVerified) ? '当前分享设置了提取码，验证后可访问内容。' : '当前分享内容已就绪。'}">提示</span>
+    </div>
+
+    <div class="stack" th:if="${share.hasExtractCode and !shareVerified}">
+        <label>
+            <span>提取码</span>
+            <input type="text" id="extractCode" maxlength="32" placeholder="输入提取码">
+        </label>
+        <button type="button" onclick="verifyShare()">验证提取码</button>
+    </div>
+
+    <div class="share-actions" th:if="${!share.hasExtractCode or shareVerified}">
+        <a class="button-link"
+           th:if="${share.nodeType.name() == 'FILE'}"
+           th:href="@{'/api/shares/' + ${share.shareToken} + '/download'}"
+           id="downloadLink">
+            下载文件
+        </a>
+        <a class="button-link secondary-link"
+           th:if="${share.nodeType.name() == 'FILE' and share.iconKey == 'video'}"
+           th:href="@{'/share/' + ${share.shareToken} + '/player'}"
+           target="_blank">
+            打开播放页
+        </a>
+        <a class="button-link secondary-link"
+           th:if="${share.nodeType.name() == 'FILE' and share.previewable and share.iconKey != 'video'}"
+           th:href="@{'/api/shares/' + ${share.shareToken} + '/preview'}"
+           target="_blank">
+            新窗口预览
+        </a>
+    </div>
+
+    <section class="preview-panel"
+             th:if="${share.nodeType.name() == 'FILE' and share.previewable and share.iconKey != 'video' and (!share.hasExtractCode or shareVerified)}">
+        <h2>在线预览</h2>
+        <img class="preview-surface"
+             th:if="${share.iconKey == 'image'}"
+             th:src="@{'/api/shares/' + ${share.shareToken} + '/preview'}"
+             th:alt="${share.fileName}">
+        <audio class="audio-player"
+               th:if="${share.iconKey == 'audio'}"
+               controls
+               preload="metadata">
+            <source th:src="@{'/api/shares/' + ${share.shareToken} + '/preview'}" th:type="${share.contentType}">
+        </audio>
+        <iframe class="preview-frame"
+                th:if="${share.iconKey == 'text'}"
+                th:src="@{'/api/shares/' + ${share.shareToken} + '/preview'}"
+                title="文件预览"></iframe>
+    </section>
+
+    <section class="preview-panel"
+             th:if="${share.nodeType.name() == 'FILE' and share.iconKey == 'video' and (!share.hasExtractCode or shareVerified)}">
+        <h2>视频播放</h2>
+        <div class="player-promo">
+            <p class="muted">大视频会进入独立播放页，支持更稳定的分段加载和拖动播放。</p>
+            <a class="button-link" th:href="@{'/share/' + ${share.shareToken} + '/player'}" target="_blank">进入播放页</a>
+        </div>
+    </section>
+
+    <section th:if="${share.nodeType.name() == 'FOLDER'}" class="share-folder">
+        <div th:if="${folderView != null}">
+            <nav class="breadcrumbs">
+                <a th:href="@{'/share/' + ${share.shareToken}}" th:text="${share.fileName}">Root</a>
+                <th:block th:each="crumb, stat : ${folderView.breadcrumbs}" th:if="${!stat.first}">
+                    <span>/</span>
+                    <a th:href="@{'/share/' + ${share.shareToken}(parentId=${crumb.id})}" th:text="${crumb.name}">Folder</a>
+                </th:block>
+            </nav>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>大小</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${folderView.items}">
+                        <td>
+                            <div class="name-cell">
+                                <span class="file-type-icon"
+                                      th:classappend="| icon-${item.iconKey}|"
+                                      th:text="${item.iconKey == 'folder' ? 'DIR' : item.iconKey == 'image' ? 'IMG' : item.iconKey == 'video' ? 'VID' : item.iconKey == 'audio' ? 'AUD' : item.iconKey == 'text' ? 'TXT' : item.iconKey == 'pdf' ? 'PDF' : 'FIL'}">
+                                    FIL
+                                </span>
+                                <a th:if="${item.nodeType.name() == 'FOLDER'}"
+                                   th:href="@{'/share/' + ${share.shareToken}(parentId=${item.id})}"
+                                   th:text="${item.name}">folder</a>
+                                <span th:unless="${item.nodeType.name() == 'FOLDER'}" th:text="${item.name}">file</span>
+                            </div>
+                        </td>
+                        <td th:text="${item.nodeType.name() == 'FOLDER' ? '文件夹' : item.iconKey == 'image' ? '图片' : item.iconKey == 'video' ? '视频' : item.iconKey == 'audio' ? '音频' : item.iconKey == 'text' ? '文本' : '文件'}">FILE</td>
+                        <td th:text="${item.nodeType.name() == 'FOLDER' ? '-' : item.sizeDisplay}">0.00 B</td>
+                        <td class="actions">
+                            <a th:if="${item.iconKey == 'video'}"
+                               th:href="@{'/share/' + ${share.shareToken} + '/player'(nodeId=${item.id})}"
+                               target="_blank">
+                                播放
+                            </a>
+                            <a th:if="${item.previewable and item.iconKey != 'video'}"
+                               th:href="@{'/api/shares/' + ${share.shareToken} + '/preview'(nodeId=${item.id})}"
+                               target="_blank">
+                                预览
+                            </a>
+                            <a th:if="${item.nodeType.name() == 'FILE'}"
+                               th:href="@{'/api/shares/' + ${share.shareToken} + '/download'(nodeId=${item.id})}">
+                                下载
+                            </a>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(folderView.items)}">
+                        <td colspan="4" class="muted">当前目录为空。</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div th:if="${folderView == null}" class="empty-state">
+            <p th:text="${folderViewError ?: '目录暂不可见。'}">目录暂不可见。</p>
+        </div>
+    </section>
+</main>
+
+<script th:inline="javascript">
+    const shareToken = /*[[${share.shareToken}]]*/ '';
+
+    async function verifyShare() {
+        const code = document.getElementById('extractCode').value;
+        const response = await fetch(`/api/shares/${shareToken}/verify`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({code}),
+            credentials: 'same-origin'
+        });
+        const result = await response.json();
+        const flash = document.getElementById('shareFlash');
+        if (!response.ok) {
+            flash.textContent = result.message || '验证失败';
+            flash.className = 'notice error visible';
+            return;
+        }
+        flash.textContent = '提取码验证通过。';
+        flash.className = 'notice success visible';
+        window.location.reload();
+    }
+</script>
+</body>
+</html>

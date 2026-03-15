@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panx 文件管理</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="cloud-body drive-body">
+<header class="drive-topbar">
+    <div class="drive-brand">
+        <div class="brand-mark">P</div>
+        <div class="drive-brand-copy">
+            <strong>Panx 云盘</strong>
+            <span>个人空间</span>
+        </div>
+    </div>
+
+    <form method="get" th:action="@{/app/files}" class="global-search-form">
+        <input type="hidden" name="parentId" th:value="${listing.parentId}">
+        <input type="search" name="keyword" th:value="${keyword}" placeholder="搜索文件、文件夹、类型">
+        <button type="submit" class="icon-button">搜</button>
+    </form>
+
+    <div class="drive-top-actions">
+        <details class="action-menu">
+            <summary class="button-primary compact-button">上传</summary>
+            <div class="menu-panel">
+                <button type="button" class="menu-item" onclick="document.getElementById('uploadInput').click()">上传文件</button>
+                <button type="button" class="menu-item" onclick="document.getElementById('uploadFolderInput').click()">上传文件夹</button>
+                <button type="button" class="menu-item" onclick="createFolder()">新建文件夹</button>
+                <button type="button" class="menu-item" onclick="createTextFile()">新建文本</button>
+                <button type="button" class="menu-item" onclick="createRemoteDownload()">远程下载</button>
+            </div>
+        </details>
+        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
+        <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit" class="secondary compact-button">退出</button>
+        </form>
+    </div>
+</header>
+
+<div class="drive-layout">
+    <aside class="drive-sidebar">
+        <section class="space-card">
+            <span class="space-pill active">个人空间</span>
+        </section>
+
+        <section class="nav-group">
+            <p class="nav-group-title">主分区</p>
+            <nav class="cloud-nav nav-stack">
+                <a class="cloud-nav-item active" th:href="@{/app/files}">
+                    <span class="cloud-nav-icon">文</span>
+                    <span>我的文件</span>
+                </a>
+                <a class="cloud-nav-item" th:href="@{/app/shares}">
+                    <span class="cloud-nav-icon">享</span>
+                    <span>我分享的</span>
+                </a>
+                <a class="cloud-nav-item" th:href="@{/app/downloads}">
+                    <span class="cloud-nav-icon">下</span>
+                    <span>下载任务</span>
+                </a>
+            </nav>
+        </section>
+    </aside>
+
+    <main class="drive-main">
+        <section class="drive-main-panel">
+            <div class="drive-toolbar">
+                <div class="toolbar-main">
+                    <div class="breadcrumbs drive-breadcrumbs">
+                        <a th:href="@{/app/files}">我的文件</a>
+                        <th:block th:each="crumb : ${listing.breadcrumbs}" th:if="${crumb.id != null}">
+                            <span>/</span>
+                            <a th:href="@{/app/files(parentId=${crumb.id})}" th:text="${crumb.name}">Folder</a>
+                        </th:block>
+                    </div>
+                    <div class="drive-subhead">
+                        <strong th:text="${isSearchMode ? '搜索结果' : listing.currentFolderName}">Root</strong>
+                        <span class="muted" th:text="${isSearchMode ? '当前展示关键词命中结果' : '当前目录内容'}">当前目录内容</span>
+                    </div>
+                </div>
+                <div class="toolbar-side">
+                    <span class="toolbar-meta">排序：更新时间</span>
+                    <span class="toolbar-meta">筛选</span>
+                </div>
+            </div>
+
+            <div class="drive-action-row">
+                <div class="primary-actions">
+                    <button type="button" onclick="document.getElementById('uploadInput').click()">上传</button>
+                    <button type="button" class="secondary" onclick="createFolder()">新建文件夹</button>
+                    <button type="button" class="secondary" onclick="createTextFile()">新建文档</button>
+                </div>
+                <div class="secondary-actions">
+                    <button type="button" class="secondary compact-button" onclick="createRemoteDownload()">远程下载</button>
+                    <span class="summary-badge" th:text="${(isSearchMode ? #lists.size(searchResults) : #lists.size(listing.items)) + ' 项'}">0 项</span>
+                </div>
+            </div>
+
+            <div class="notice" id="flash"></div>
+
+            <div class="file-table-card file-drop-target" id="fileDropTarget">
+                <div class="file-drop-hint" id="fileDropHint" hidden>
+                    <div class="file-drop-hint-card">
+                        <strong>松开即可上传到当前目录</strong>
+                        <span>支持文件和文件夹</span>
+                    </div>
+                </div>
+                <table class="drive-table">
+                    <thead>
+                    <tr>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>大小</th>
+                        <th>修改时间</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="item : ${isSearchMode ? searchResults : listing.items}"
+                        class="file-row"
+                        th:attr="data-node-id=${item.id},
+                                 data-node-name=${item.name},
+                                 data-parent-id=${item.parentId},
+                                 data-node-type=${item.nodeType.name()},
+                                 data-previewable=${item.previewable},
+                                 data-icon-key=${item.iconKey},
+                                 data-open-url=${item.nodeType.name() == 'FOLDER' ? '/app/files?parentId=' + item.id : ''},
+                                 data-preview-page-url=${item.iconKey == 'video' or item.iconKey == 'audio' ? '/app/files/' + item.id + '/player' : (item.previewable ? '/app/files/' + item.id + '/preview' : '')}">
+                        <td>
+                            <div class="name-cell">
+                                <span class="file-type-icon"
+                                      th:classappend="| icon-${item.iconKey}|"
+                                      th:text="${item.iconKey == 'folder' ? 'DIR' : item.iconKey == 'image' ? 'IMG' : item.iconKey == 'video' ? 'VID' : item.iconKey == 'audio' ? 'AUD' : item.iconKey == 'text' ? 'TXT' : item.iconKey == 'pdf' ? 'PDF' : 'FIL'}">
+                                    FIL
+                                </span>
+                                <a th:if="${item.nodeType.name() == 'FOLDER'}"
+                                   th:href="@{/app/files(parentId=${item.id})}"
+                                   th:text="${item.name}">folder</a>
+                                <span th:unless="${item.nodeType.name() == 'FOLDER'}" th:text="${item.name}">file</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="type-pill"
+                                  th:text="${item.nodeType.name() == 'FOLDER' ? '文件夹' : item.iconKey == 'image' ? '图片' : item.iconKey == 'video' ? '视频' : item.iconKey == 'audio' ? '音频' : item.iconKey == 'text' ? '文档' : item.iconKey == 'pdf' ? 'PDF' : '文件'}">
+                                文件
+                            </span>
+                        </td>
+                        <td th:text="${item.nodeType.name() == 'FOLDER' ? '-' : item.sizeDisplay}">0.00 B</td>
+                        <td th:text="${#temporals.format(item.updatedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-01-01</td>
+                        <td class="actions-cell">
+                            <details class="row-menu">
+                                <summary class="menu-trigger row-trigger">···</summary>
+                                <div class="menu-panel row-menu-panel">
+                                    <a class="menu-item"
+                                       th:if="${item.nodeType.name() == 'FILE'}"
+                                       th:href="@{'/api/files/' + ${item.id} + '/download'}">下载</a>
+                                    <a class="menu-item"
+                                       th:if="${item.iconKey == 'video' or item.iconKey == 'audio'}"
+                                       th:href="@{'/app/files/' + ${item.id} + '/player'}">播放</a>
+                                    <a class="menu-item"
+                                       th:if="${item.previewable and item.iconKey != 'video' and item.iconKey != 'audio'}"
+                                       th:href="@{'/app/files/' + ${item.id} + '/preview'}">预览</a>
+                                    <button type="button"
+                                            class="menu-item"
+                                            th:attr="data-id=${item.id},data-name=${item.name}"
+                                            onclick="renameNode(this.dataset.id, this.dataset.name)">重命名</button>
+                                    <button type="button"
+                                            class="menu-item"
+                                            th:attr="data-id=${item.id}"
+                                            onclick="moveNode(this.dataset.id)">移动</button>
+                                    <button type="button"
+                                            class="menu-item"
+                                            th:attr="data-id=${item.id}"
+                                            onclick="shareNode(this.dataset.id)">分享</button>
+                                    <button type="button"
+                                            class="menu-item danger"
+                                            th:attr="data-id=${item.id},data-type=${item.nodeType.name()}"
+                                            onclick="deleteNode(this.dataset.id, this.dataset.type)">删除</button>
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(isSearchMode ? searchResults : listing.items)}">
+                        <td colspan="5" class="muted">当前没有文件。</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<input id="uploadInput" type="file" multiple hidden onchange="uploadFiles(this.files)">
+<input id="uploadFolderInput" type="file" webkitdirectory directory multiple hidden onchange="uploadFiles(this.files)">
+
+<div class="dialog-backdrop" id="dialogBackdrop" hidden>
+    <section class="dialog-card" id="moveDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Move</p>
+                <h3>移动到目标目录</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <p class="muted" id="moveDialogLabel"></p>
+        <label>
+            <span>目标目录</span>
+            <select id="moveTargetSelect"></select>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="submitMove()">确认移动</button>
+        </div>
+    </section>
+
+    <section class="dialog-card" id="createFolderDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Create</p>
+                <h3>新建文件夹</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <label>
+            <span>文件夹名称</span>
+            <input id="createFolderNameInput" type="text" maxlength="255" placeholder="请输入文件夹名称">
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="submitCreateFolder()">确认创建</button>
+        </div>
+    </section>
+
+    <section class="dialog-card" id="createTextDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Create</p>
+                <h3>新建文档</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <label>
+            <span>文件名</span>
+            <input id="createTextNameInput" type="text" maxlength="255" placeholder="例如 note.txt">
+        </label>
+        <label>
+            <span>内容</span>
+            <textarea id="createTextContentInput" class="dialog-textarea" rows="8" placeholder="请输入文档内容"></textarea>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="submitCreateTextFile()">确认创建</button>
+        </div>
+    </section>
+
+    <section class="dialog-card" id="remoteDownloadDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Remote Download</p>
+                <h3>远程下载</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <label>
+            <span>下载地址</span>
+            <input id="remoteDownloadUrlInput" type="url" maxlength="2048" placeholder="请输入 HTTP/HTTPS 地址">
+        </label>
+        <label>
+            <span>保存文件名</span>
+            <input id="remoteDownloadNameInput" type="text" maxlength="255" placeholder="可选，留空自动推断">
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="submitRemoteDownload()">创建任务</button>
+        </div>
+    </section>
+
+    <section class="dialog-card" id="shareDialog" hidden>
+        <div class="dialog-head">
+            <div>
+                <p class="eyebrow">Share</p>
+                <h3>分享链接</h3>
+            </div>
+            <button type="button" class="secondary" onclick="closeDialogs()">关闭</button>
+        </div>
+        <p class="muted" id="shareDialogHint">可以直接复制下面的链接。</p>
+        <label>
+            <span>分享地址</span>
+            <input id="shareUrlInput" type="text" readonly>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" onclick="copyShareUrl()">复制链接</button>
+            <a class="button-link secondary-link" id="shareOpenLink" target="_blank">打开分享页</a>
+        </div>
+    </section>
+</div>
+
+<section class="upload-toast" id="uploadToast" hidden>
+    <div class="upload-toast-head">
+        <div>
+            <strong id="uploadProgressTitle">正在上传</strong>
+            <p class="muted" id="uploadProgressMeta">0%</p>
+        </div>
+        <button type="button" class="secondary compact-button" onclick="cancelCurrentUpload()">取消</button>
+    </div>
+    <div class="progress-track">
+        <div class="progress-fill" id="uploadProgressFill"></div>
+    </div>
+</section>
+
+<script th:inline="javascript">
+    const currentParentId = /*[[${listing.parentId}]]*/ null;
+    let pendingMoveNodeId = null;
+    let pendingMoveNodeName = '';
+    let pendingMoveNodeParentId = null;
+    let currentUploadXhr = null;
+
+    function showFlash(message, isError = false) {
+        const flash = document.getElementById('flash');
+        flash.textContent = message;
+        flash.className = isError ? 'notice error visible' : 'notice success visible';
+        setTimeout(() => flash.className = 'notice', 3000);
+    }
+
+    function openDialog(dialogId) {
+        closeAllMenus();
+        const backdrop = document.getElementById('dialogBackdrop');
+        backdrop.hidden = false;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
+        document.getElementById(dialogId).hidden = false;
+    }
+
+    function closeDialogs() {
+        document.getElementById('dialogBackdrop').hidden = true;
+        document.querySelectorAll('.dialog-card').forEach(dialog => dialog.hidden = true);
+        pendingMoveNodeId = null;
+        pendingMoveNodeName = '';
+        pendingMoveNodeParentId = null;
+    }
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {'Content-Type': 'application/json', ...(options.headers || {})},
+            credentials: 'same-origin',
+            ...options
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.message || '请求失败');
+            }
+            throw new Error('请求失败');
+        }
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        return response;
+    }
+
+    function openShareDialog(shareUrl, hint) {
+        closeAllMenus();
+        document.getElementById('shareUrlInput').value = shareUrl;
+        document.getElementById('shareOpenLink').href = shareUrl;
+        document.getElementById('shareDialogHint').textContent = hint;
+        openDialog('shareDialog');
+    }
+
+    function closeAllMenus() {
+        document.querySelectorAll('.action-menu[open], .row-menu[open]').forEach(menu => {
+            menu.removeAttribute('open');
+            const panel = menu.querySelector('.menu-panel');
+            if (panel) {
+                panel.classList.remove('menu-panel-floating');
+                panel.style.top = '';
+                panel.style.left = '';
+            }
+        });
+    }
+
+    function openRowMenuAt(detailsElement, x, y, allowToggle = false) {
+        const panel = detailsElement.querySelector('.menu-panel');
+        if (!panel) return;
+        const wasOpen = detailsElement.hasAttribute('open') && panel.classList.contains('menu-panel-floating');
+        closeAllMenus();
+        if (allowToggle && wasOpen) {
+            return;
+        }
+        detailsElement.setAttribute('open', 'open');
+        panel.classList.add('menu-panel-floating');
+        panel.style.left = `${Math.max(12, Math.min(x, window.innerWidth - 196))}px`;
+        panel.style.top = `${Math.max(12, Math.min(y, window.innerHeight - 260))}px`;
+    }
+
+    function handleFileRowClick(row, event) {
+        if (event.target.closest('a, button, summary, details, input, textarea, select')) {
+            return;
+        }
+        const {nodeType, previewable, openUrl, previewPageUrl} = row.dataset;
+        if (nodeType === 'FOLDER' && openUrl) {
+            location.href = openUrl;
+            return;
+        }
+        if (previewable === 'true' && previewPageUrl) {
+            location.href = previewPageUrl;
+            return;
+        }
+        const menu = row.querySelector('.row-menu');
+        if (menu) {
+            event.preventDefault();
+            event.stopPropagation();
+            openRowMenuAt(menu, event.clientX, event.clientY);
+        }
+    }
+
+    function setUploadProgress(visible, percent = 0, title = '正在上传', meta = '0%') {
+        const toast = document.getElementById('uploadToast');
+        toast.hidden = !visible;
+        document.getElementById('uploadProgressTitle').textContent = title;
+        document.getElementById('uploadProgressMeta').textContent = meta;
+        document.getElementById('uploadProgressFill').style.width = `${Math.max(0, Math.min(100, percent))}%`;
+    }
+
+    function formatBytes(bytes) {
+        if (bytes == null || Number.isNaN(bytes)) return '-';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = Number(bytes);
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+        return `${value.toFixed(2)} ${units[unitIndex]}`;
+    }
+
+    async function createFolder() {
+        document.getElementById('createFolderNameInput').value = '';
+        openDialog('createFolderDialog');
+    }
+
+    async function submitCreateFolder() {
+        const name = document.getElementById('createFolderNameInput').value.trim();
+        if (!name) {
+            showFlash('请输入文件夹名称。', true);
+            return;
+        }
+        try {
+            await request('/api/files/folders', {
+                method: 'POST',
+                body: JSON.stringify({parentId: currentParentId, name})
+            });
+            closeDialogs();
+            location.reload();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function createTextFile() {
+        document.getElementById('createTextNameInput').value = 'note.txt';
+        document.getElementById('createTextContentInput').value = '';
+        openDialog('createTextDialog');
+    }
+
+    async function submitCreateTextFile() {
+        const name = document.getElementById('createTextNameInput').value.trim();
+        const content = document.getElementById('createTextContentInput').value;
+        if (!name) {
+            showFlash('请输入文档文件名。', true);
+            return;
+        }
+        try {
+            await request('/api/files/text', {
+                method: 'POST',
+                body: JSON.stringify({parentId: currentParentId, name, content})
+            });
+            closeDialogs();
+            location.reload();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function createRemoteDownload() {
+        document.getElementById('remoteDownloadUrlInput').value = '';
+        document.getElementById('remoteDownloadNameInput').value = '';
+        openDialog('remoteDownloadDialog');
+    }
+
+    async function submitRemoteDownload() {
+        const sourceUrl = document.getElementById('remoteDownloadUrlInput').value.trim();
+        const fileNameRaw = document.getElementById('remoteDownloadNameInput').value.trim();
+        if (!sourceUrl) {
+            showFlash('请输入下载地址。', true);
+            return;
+        }
+        try {
+            await request('/api/files/download-tasks', {
+                method: 'POST',
+                body: JSON.stringify({
+                    parentId: currentParentId,
+                    sourceUrl,
+                    fileName: fileNameRaw === '' ? null : fileNameRaw
+                })
+            });
+            closeDialogs();
+            showFlash('远程下载任务已创建，可在“下载任务”页面查看进度。');
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function uploadFiles(files) {
+        if (!files || files.length === 0) return;
+        if (currentUploadXhr) {
+            showFlash('当前已有上传任务，请先等待完成或取消。', true);
+            return;
+        }
+
+        const fileList = Array.from(files);
+        const formData = new FormData();
+        if (currentParentId !== null) {
+            formData.append('parentId', currentParentId);
+        }
+        fileList.forEach(file => {
+            formData.append('files', file);
+            formData.append('relativePaths', file.webkitRelativePath || file.name);
+        });
+
+        const xhr = new XMLHttpRequest();
+        currentUploadXhr = xhr;
+        setUploadProgress(true, 0, '正在上传', `${fileList.length} 个项目`);
+
+        xhr.open('POST', '/api/files/upload');
+        xhr.withCredentials = true;
+        xhr.upload.onprogress = event => {
+            if (!event.lengthComputable) return;
+            const percent = Math.round((event.loaded / event.total) * 100);
+            setUploadProgress(true, percent, '正在上传', `${percent}% · ${formatBytes(event.loaded)} / ${formatBytes(event.total)}`);
+        };
+        xhr.onerror = () => {
+            currentUploadXhr = null;
+            setUploadProgress(false);
+            showFlash('上传失败。', true);
+        };
+        xhr.onabort = () => {
+            currentUploadXhr = null;
+            setUploadProgress(false);
+            showFlash('上传已取消。', true);
+        };
+        xhr.onload = () => {
+            currentUploadXhr = null;
+            if (xhr.status < 200 || xhr.status >= 300) {
+                setUploadProgress(false);
+                try {
+                    const error = JSON.parse(xhr.responseText);
+                    showFlash(error.message || '上传失败。', true);
+                } catch (parseError) {
+                    showFlash('上传失败。', true);
+                }
+                return;
+            }
+            setUploadProgress(true, 100, '上传完成', '100%');
+            location.reload();
+        };
+        xhr.send(formData);
+    }
+
+    function cancelCurrentUpload() {
+        if (currentUploadXhr) {
+            currentUploadXhr.abort();
+        }
+    }
+
+    async function renameNode(id, currentName) {
+        const name = prompt('请输入新名称', currentName);
+        if (!name) return;
+        try {
+            await request(`/api/files/${id}/rename`, {
+                method: 'PATCH',
+                body: JSON.stringify({name})
+            });
+            location.reload();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function moveNode(id) {
+        try {
+            const row = document.querySelector(`tr[data-node-id="${id}"]`);
+            pendingMoveNodeId = id;
+            pendingMoveNodeName = row?.dataset.nodeName || `节点 #${id}`;
+            pendingMoveNodeParentId = row?.dataset.parentId === '' || row?.dataset.parentId == null ? null : Number(row.dataset.parentId);
+
+            const query = new URLSearchParams();
+            query.set('excludeNodeId', id);
+            const result = await request(`/api/files/tree?${query.toString()}`);
+            const select = document.getElementById('moveTargetSelect');
+            const options = result.data || [];
+            select.innerHTML = '';
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option.id == null ? '' : String(option.id);
+                optionElement.textContent = option.path;
+                optionElement.selected = String(option.id) === String(pendingMoveNodeParentId);
+                select.appendChild(optionElement);
+            });
+            document.getElementById('moveDialogLabel').textContent = `当前操作项：${pendingMoveNodeName}`;
+            openDialog('moveDialog');
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function submitMove() {
+        const select = document.getElementById('moveTargetSelect');
+        const rawValue = select.value;
+        const targetParentId = rawValue === '' ? null : Number(rawValue);
+        try {
+            await request(`/api/files/${pendingMoveNodeId}/move`, {
+                method: 'PATCH',
+                body: JSON.stringify({targetParentId})
+            });
+            closeDialogs();
+            location.href = targetParentId == null ? '/app/files' : `/app/files?parentId=${targetParentId}`;
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function deleteNode(id, nodeType) {
+        const recursive = nodeType === 'FOLDER' && confirm('文件夹可能包含子项。确认递归删除吗？');
+        try {
+            await request(`/api/files/${id}?recursive=${recursive}`, {method: 'DELETE'});
+            location.reload();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function shareNode(id) {
+        const expireHoursRaw = prompt('过期小时数可选，留空使用默认值', '72');
+        if (expireHoursRaw === null) return;
+        const expireHours = expireHoursRaw.trim() === '' ? null : Number(expireHoursRaw);
+        if (expireHoursRaw.trim() !== '' && (!Number.isInteger(expireHours) || expireHours <= 0)) {
+            showFlash('过期小时数必须为正整数。', true);
+            return;
+        }
+
+        const extractCodeRaw = prompt('提取码可选，留空则不设置');
+        if (extractCodeRaw === null) return;
+        const extractCode = extractCodeRaw.trim() === '' ? null : extractCodeRaw.trim();
+
+        try {
+            const result = await request('/api/shares', {
+                method: 'POST',
+                body: JSON.stringify({fileNodeId: Number(id), expireHours, extractCode})
+            });
+            const token = result.data.shareToken;
+            const shareUrl = `${location.origin}/share/${token}`;
+            let hint = '可以直接复制下面的链接。';
+            try {
+                if (navigator.clipboard && window.isSecureContext && document.hasFocus()) {
+                    await navigator.clipboard.writeText(shareUrl);
+                    hint = '链接已复制到剪贴板，也可以从下面再次复制。';
+                    showFlash('分享链接已生成并复制。');
+                } else {
+                    hint = '当前浏览器未允许自动复制，请手动复制下面的链接。';
+                    showFlash('分享链接已生成，请手动复制。', true);
+                }
+            } catch (clipboardError) {
+                hint = '自动复制失败，请手动复制下面的链接。';
+                showFlash('分享链接已生成，请手动复制。', true);
+            }
+            openShareDialog(shareUrl, hint);
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function copyShareUrl() {
+        const input = document.getElementById('shareUrlInput');
+        input.focus();
+        input.select();
+        try {
+            if (navigator.clipboard && window.isSecureContext && document.hasFocus()) {
+                await navigator.clipboard.writeText(input.value);
+            } else {
+                document.execCommand('copy');
+            }
+            showFlash('分享链接已复制。');
+        } catch (error) {
+            showFlash('自动复制失败，请手动复制输入框中的链接。', true);
+        }
+    }
+
+    const uploadDropzone = document.getElementById('fileDropTarget');
+    const uploadDropHint = document.getElementById('fileDropHint');
+    ['dragenter', 'dragover'].forEach(eventName => {
+        uploadDropzone.addEventListener(eventName, event => {
+            event.preventDefault();
+            uploadDropzone.classList.add('dragover');
+            uploadDropHint.hidden = false;
+        });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+        uploadDropzone.addEventListener(eventName, event => {
+            event.preventDefault();
+            if (eventName === 'drop') {
+                uploadDropzone.classList.remove('dragover');
+                uploadDropHint.hidden = true;
+                const files = event.dataTransfer?.files;
+                if (files && files.length > 0) {
+                    uploadFiles(files);
+                }
+                return;
+            }
+            if (!uploadDropzone.contains(event.relatedTarget)) {
+                uploadDropzone.classList.remove('dragover');
+                uploadDropHint.hidden = true;
+            }
+        });
+    });
+
+    document.getElementById('dialogBackdrop').addEventListener('click', event => {
+        if (event.target.id === 'dialogBackdrop') {
+            closeDialogs();
+        }
+    });
+
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            closeAllMenus();
+            closeDialogs();
+        }
+    });
+
+    document.addEventListener('click', event => {
+        if (!event.target.closest('.dialog-card, #dialogBackdrop, .action-menu, .row-menu')) {
+            closeAllMenus();
+        }
+    });
+
+    document.querySelectorAll('.row-menu > summary').forEach(summary => {
+        summary.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            openRowMenuAt(summary.parentElement, event.clientX, event.clientY, true);
+        });
+    });
+
+    document.querySelectorAll('.action-menu > summary').forEach(summary => {
+        summary.addEventListener('click', event => {
+            event.preventDefault();
+            event.stopPropagation();
+            const menu = summary.parentElement;
+            const isOpen = menu.hasAttribute('open');
+            closeAllMenus();
+            if (!isOpen) {
+                menu.setAttribute('open', 'open');
+            }
+        });
+    });
+
+    document.querySelectorAll('.file-row').forEach(row => {
+        row.addEventListener('click', event => handleFileRowClick(row, event));
+    });
+
+    window.addEventListener('resize', closeAllMenus);
+    document.addEventListener('scroll', closeAllMenus, true);
+
+</script>
+</body>
+</html>

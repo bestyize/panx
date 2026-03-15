@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panx 下载任务</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="cloud-body drive-body">
+<header class="drive-topbar">
+    <div class="drive-brand">
+        <div class="brand-mark">P</div>
+        <div class="drive-brand-copy">
+            <strong>Panx 云盘</strong>
+            <span>个人空间</span>
+        </div>
+    </div>
+
+    <form method="get" th:action="@{/app/files}" class="global-search-form">
+        <input type="search" name="keyword" placeholder="搜索文件、文件夹、类型">
+        <button type="submit" class="icon-button">搜</button>
+    </form>
+
+    <div class="drive-top-actions">
+        <button type="button" class="icon-button quiet-button" aria-label="通知">铃</button>
+        <span class="user-chip" th:text="${currentUser.displayName}">Administrator</span>
+        <form method="post" th:action="@{/logout}">
+            <button type="submit" class="secondary compact-button">退出</button>
+        </form>
+    </div>
+</header>
+
+<div class="drive-layout">
+    <aside class="drive-sidebar">
+        <section class="space-card">
+            <span class="space-pill active">个人空间</span>
+        </section>
+
+        <section class="nav-group">
+            <p class="nav-group-title">主分区</p>
+            <nav class="cloud-nav nav-stack">
+                <a class="cloud-nav-item" th:href="@{/app/files}">
+                    <span class="cloud-nav-icon">文</span>
+                    <span>我的文件</span>
+                </a>
+                <a class="cloud-nav-item" th:href="@{/app/shares}">
+                    <span class="cloud-nav-icon">享</span>
+                    <span>我分享的</span>
+                </a>
+                <a class="cloud-nav-item active" th:href="@{/app/downloads}">
+                    <span class="cloud-nav-icon">下</span>
+                    <span>下载任务</span>
+                </a>
+            </nav>
+        </section>
+    </aside>
+
+    <main class="drive-main">
+        <section class="drive-main-panel">
+            <div class="drive-toolbar">
+                <div class="toolbar-main">
+                    <div class="breadcrumbs drive-breadcrumbs">
+                        <a th:href="@{/app/files}">我的文件</a>
+                        <span>/</span>
+                        <span>下载任务</span>
+                    </div>
+                    <div class="drive-subhead">
+                        <strong>下载任务</strong>
+                        <span class="muted">查看远程下载进度并获取下载结果</span>
+                    </div>
+                </div>
+                <div class="toolbar-side">
+                    <span class="summary-badge" th:text="${#lists.size(downloadTasks)} + ' 项'">0 项</span>
+                </div>
+            </div>
+
+            <div class="drive-action-row">
+                <div class="primary-actions">
+                    <button type="button" onclick="createRemoteDownload()">新建远程下载</button>
+                </div>
+                <div class="secondary-actions">
+                    <button type="button" class="secondary compact-button" onclick="refreshDownloadTasks()">刷新</button>
+                </div>
+            </div>
+
+            <div class="notice" id="flash"></div>
+            <div class="task-list" id="downloadTaskList"></div>
+        </section>
+    </main>
+</div>
+
+<script th:inline="javascript">
+    const initialDownloadTasks = /*[[${downloadTasks}]]*/ [];
+
+    function showFlash(message, isError = false) {
+        const flash = document.getElementById('flash');
+        flash.textContent = message;
+        flash.className = isError ? 'notice error visible' : 'notice success visible';
+        setTimeout(() => flash.className = 'notice', 3000);
+    }
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {'Content-Type': 'application/json', ...(options.headers || {})},
+            credentials: 'same-origin',
+            ...options
+        });
+        const contentType = response.headers.get('content-type') || '';
+        if (!response.ok) {
+            if (contentType.includes('application/json')) {
+                const error = await response.json();
+                throw new Error(error.message || '请求失败');
+            }
+            throw new Error('请求失败');
+        }
+        if (contentType.includes('application/json')) {
+            return response.json();
+        }
+        return response;
+    }
+
+    function formatBytes(bytes) {
+        if (bytes == null || Number.isNaN(bytes)) return '-';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = Number(bytes);
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+        return `${value.toFixed(2)} ${units[unitIndex]}`;
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
+
+    function renderDownloadTasks(tasks) {
+        const container = document.getElementById('downloadTaskList');
+        if (!tasks || tasks.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>当前没有下载任务。</p>
+                    <p class="muted">点击“新建远程下载”可把 HTTP/HTTPS 文件直接保存到根目录。</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = tasks.map(task => {
+            const statusLabelMap = {
+                PENDING: '排队中',
+                RUNNING: '下载中',
+                COMPLETED: '已完成',
+                FAILED: '失败',
+                CANCELLED: '已取消'
+            };
+            const statusClassMap = {
+                PENDING: 'task-pending',
+                RUNNING: 'task-running',
+                COMPLETED: 'task-completed',
+                FAILED: 'task-failed',
+                CANCELLED: 'task-cancelled'
+            };
+            const total = task.totalBytesDisplay || (task.totalBytes ? formatBytes(task.totalBytes) : '未知大小');
+            const progress = task.totalBytes && task.totalBytes > 0
+                ? Math.min(100, Math.round((task.bytesDownloaded / task.totalBytes) * 100))
+                : (task.status === 'COMPLETED' ? 100 : 0);
+            const canCancel = task.status === 'PENDING' || task.status === 'RUNNING';
+            const openLink = task.fileNodeId ? `<a href="/api/files/${task.fileNodeId}/download">下载结果</a>` : '';
+
+            return `
+                <article class="task-card">
+                    <div class="task-head">
+                        <strong>${escapeHtml(task.fileName)}</strong>
+                        <span class="task-status ${statusClassMap[task.status] || 'task-pending'}">${statusLabelMap[task.status] || task.status}</span>
+                    </div>
+                    <p class="muted task-url">${escapeHtml(task.sourceUrl)}</p>
+                    <p class="muted">${task.bytesDownloadedDisplay || formatBytes(task.bytesDownloaded)} / ${total}</p>
+                    <div class="progress-track compact">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                    ${task.errorMessage ? `<p class="muted task-error">${escapeHtml(task.errorMessage)}</p>` : ''}
+                    <div class="task-actions">
+                        ${openLink}
+                        ${canCancel ? `<button type="button" class="link-button danger" onclick="cancelDownloadTask(${task.id})">取消任务</button>` : ''}
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
+
+    async function refreshDownloadTasks() {
+        try {
+            const result = await request('/api/files/download-tasks');
+            renderDownloadTasks(result.data || []);
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function createRemoteDownload() {
+        const sourceUrl = prompt('请输入要下载的 HTTP/HTTPS 地址');
+        if (!sourceUrl) return;
+        const fileNameRaw = prompt('可选：自定义保存文件名，留空则自动推断', '') ?? '';
+        try {
+            await request('/api/files/download-tasks', {
+                method: 'POST',
+                body: JSON.stringify({
+                    parentId: null,
+                    sourceUrl,
+                    fileName: fileNameRaw.trim() === '' ? null : fileNameRaw.trim()
+                })
+            });
+            showFlash('远程下载任务已创建。');
+            refreshDownloadTasks();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    async function cancelDownloadTask(id) {
+        if (!confirm('确认取消该下载任务吗？')) return;
+        try {
+            await request(`/api/files/download-tasks/${id}`, {method: 'DELETE'});
+            showFlash('下载任务已取消。');
+            refreshDownloadTasks();
+        } catch (error) {
+            showFlash(error.message, true);
+        }
+    }
+
+    renderDownloadTasks(initialDownloadTasks);
+    window.setInterval(refreshDownloadTasks, 4000);
+</script>
+</body>
+</html>

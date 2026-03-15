@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${file.name} + ' - Panx Preview'">Panx Preview</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="player-page">
+<main class="preview-page-shell">
+    <section class="panel preview-page-panel">
+        <div class="player-stage-head">
+            <a class="back-link preview-back-link" th:href="${backUrl}">返回文件列表</a>
+            <span class="type-pill"
+                  th:text="${file.iconKey == 'image' ? '图片预览' : file.iconKey == 'text' ? '文本预览' : '文件预览'}">
+                文件预览
+            </span>
+        </div>
+
+        <div class="preview-page-stage">
+            <img class="preview-surface preview-stage-image"
+                 th:if="${file.iconKey == 'image'}"
+                 th:src="${previewUrl}"
+                 th:alt="${file.name}">
+            <iframe class="preview-frame preview-stage-frame"
+                    th:if="${file.iconKey != 'image'}"
+                    th:src="${previewUrl}"
+                    title="文件预览"></iframe>
+        </div>
+    </section>
+
+    <aside class="player-sidebar">
+        <section class="panel">
+            <p class="eyebrow">Preview</p>
+            <h1 th:text="${file.name}">file.txt</h1>
+            <p class="muted" th:text="'类型：' + ${file.iconKey == 'image' ? '图片' : file.iconKey == 'text' ? '文档' : '文件'}">类型</p>
+            <p class="muted" th:text="'大小：' + ${file.sizeDisplay}">大小</p>
+            <p class="muted" th:if="${file.contentType != null}" th:text="'格式：' + ${file.contentType}">格式</p>
+            <div class="player-actions">
+                <a class="button-link" th:href="${downloadUrl}">下载文件</a>
+                <a class="button-link secondary-link" th:href="${previewUrl}" target="_blank">打开原始预览</a>
+            </div>
+        </section>
+    </aside>
+</main>
+</body>
+</html>

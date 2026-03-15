@@ -1,3 +1,30 @@
 spring:
   application:
     name: panx
+  datasource:
+    url: ${PANX_DB_URL:jdbc:mysql://127.0.0.1:3306/panx?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${PANX_DB_USERNAME:panx}
+    password: ${PANX_DB_PASSWORD:panx}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
+  servlet:
+    multipart:
+      max-file-size: ${PANX_MAX_FILE_SIZE:2GB}
+      max-request-size: ${PANX_MAX_REQUEST_SIZE:4GB}
+  thymeleaf:
+    cache: false
+
+panx:
+  storage:
+    root-dir: ${PANX_STORAGE_ROOT:./data/storage}
+    max-text-preview-bytes: ${PANX_MAX_TEXT_PREVIEW_BYTES:65536}
+  share:
+    default-expire-hours: ${PANX_SHARE_DEFAULT_EXPIRE_HOURS:168}
+  security:
+    init-admin:
+      enabled: ${PANX_INIT_ADMIN_ENABLED:true}
+      username: ${PANX_INIT_ADMIN_USERNAME:admin}
+      password: ${PANX_INIT_ADMIN_PASSWORD:admin123}
+      display-name: ${PANX_INIT_ADMIN_DISPLAY_NAME:Administrator}
