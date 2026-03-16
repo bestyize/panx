@@ -14,6 +14,7 @@ import xyz.thewind.panx.service.CurrentUserService
 import xyz.thewind.panx.service.DownloadTaskService
 import xyz.thewind.panx.service.FilePreview
 import xyz.thewind.panx.service.FileService
+import xyz.thewind.panx.service.MediaAccessTokenService
 import jakarta.validation.Valid
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -43,6 +44,7 @@ class FileApiController(
     private val currentUserService: CurrentUserService,
     private val fileService: FileService,
     private val downloadTaskService: DownloadTaskService,
+    private val mediaAccessTokenService: MediaAccessTokenService,
 ) {
 
     @GetMapping
@@ -146,17 +148,29 @@ class FileApiController(
 
     @GetMapping("/{id}/preview")
     fun preview(
-        authentication: Authentication,
+        authentication: Authentication?,
         @PathVariable id: Long,
+        @RequestParam(required = false) mediaToken: String?,
         @RequestHeader(name = HttpHeaders.RANGE, required = false) rangeHeader: String?,
     ): ResponseEntity<*> {
-        return when (val preview = fileService.getFileForPreview(currentUserService.getCurrentUser(authentication), id)) {
+        val preview = resolvePreview(authentication, id, mediaToken)
+        return when (preview) {
             is FilePreview.Binary -> binaryPreviewResponse(preview, rangeHeader)
 
             is FilePreview.Text -> ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(preview.node.contentType ?: MediaType.TEXT_PLAIN_VALUE))
                 .body(preview.content)
         }
+    }
+
+    private fun resolvePreview(authentication: Authentication?, id: Long, mediaToken: String?): FilePreview {
+        val authenticatedUser = runCatching { currentUserService.getCurrentUser(authentication) }.getOrNull()
+        if (authenticatedUser != null) {
+            return fileService.getFileForPreview(authenticatedUser, id)
+        }
+        val ownerId = mediaAccessTokenService.validateFilePreviewToken(mediaToken, id)
+            ?: throw xyz.thewind.panx.exception.UnauthorizedException("Authentication required")
+        return fileService.getFileForPreview(ownerId, id)
     }
 
     @PatchMapping("/{id}/rename")

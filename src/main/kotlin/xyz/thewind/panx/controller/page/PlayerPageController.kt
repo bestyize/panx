@@ -2,6 +2,7 @@ package xyz.thewind.panx.controller.page
 
 import xyz.thewind.panx.service.CurrentUserService
 import xyz.thewind.panx.service.FileService
+import xyz.thewind.panx.service.MediaAccessTokenService
 import xyz.thewind.panx.service.ShareService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpSession
@@ -19,6 +20,7 @@ class PlayerPageController(
     private val currentUserService: CurrentUserService,
     private val fileService: FileService,
     private val shareService: ShareService,
+    private val mediaAccessTokenService: MediaAccessTokenService,
 ) {
 
     @GetMapping("/app/files/{id}/player")
@@ -33,8 +35,9 @@ class PlayerPageController(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported player media")
         }
         val response = fileService.toResponse(node)
+        val mediaToken = mediaAccessTokenService.issueFilePreviewToken(owner.id!!, response.id)
         model.addAttribute("media", response)
-        model.addAttribute("streamUrl", "/api/files/${response.id}/preview")
+        model.addAttribute("streamUrl", "/api/files/${response.id}/preview?mediaToken=$mediaToken")
         model.addAttribute("downloadUrl", "/api/files/${response.id}/download")
         model.addAttribute("backUrl", node.parentId?.let { "/app/files?parentId=$it" } ?: "/app/files")
         model.addAttribute("pageTitle", response.name)

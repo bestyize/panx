@@ -28,3 +28,6 @@ panx:
       username: ${PANX_INIT_ADMIN_USERNAME:admin}
       password: ${PANX_INIT_ADMIN_PASSWORD:admin123}
       display-name: ${PANX_INIT_ADMIN_DISPLAY_NAME:Administrator}
+    media-access:
+      token-secret: ${PANX_MEDIA_ACCESS_TOKEN_SECRET:panx-local-media-access-secret-change-me}
+      token-ttl-seconds: ${PANX_MEDIA_ACCESS_TOKEN_TTL_SECONDS:1800}

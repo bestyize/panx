@@ -162,6 +162,11 @@ class FileService(
         return getFileForPreviewByNode(node)
     }
 
+    fun getFileForPreview(ownerId: Long, id: Long): FilePreview {
+        val node = getFile(ownerId, id)
+        return getFileForPreviewByNode(node)
+    }
+
     fun getFileForPreviewByNode(node: FileNode): FilePreview {
         val storagePath = node.storagePath ?: throw NotFoundException("Stored file not found")
         val contentType = node.contentType ?: MediaType.APPLICATION_OCTET_STREAM_VALUE

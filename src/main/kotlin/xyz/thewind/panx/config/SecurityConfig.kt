@@ -32,10 +32,14 @@ class SecurityConfig(
             .authorizeHttpRequests {
                 it.requestMatchers("/css/**", "/login", "/share/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/files/*/preview").permitAll()
+                    .requestMatchers(HttpMethod.HEAD, "/api/files/*/preview").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/shares/*").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/shares/*/verify").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/shares/*/download").permitAll()
+                    .requestMatchers(HttpMethod.HEAD, "/api/shares/*/download").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/shares/*/preview").permitAll()
+                    .requestMatchers(HttpMethod.HEAD, "/api/shares/*/preview").permitAll()
                     .anyRequest().authenticated()
             }
             .formLogin {
